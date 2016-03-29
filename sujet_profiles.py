@@ -13,7 +13,7 @@ class Subject:
 
         path_subject = '{}/{}/DTI/{}'.format(path_database, self.subject, self.DTIcode)
         self.anat_source = '{}/ANAT/'.format(path_subject)
-        self.dwi_source = '{}/DTI/'.format(path_subject)
+        self.dwi_source = '{}/DIFFUSION/'.format(path_subject)
 
         # workspace path
         self.anat_workspace = '/hpc/crise/hao.c/data/{}/raw_anat/'.format(self.subject)

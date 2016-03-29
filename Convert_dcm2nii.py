@@ -46,8 +46,6 @@ def dcm2nii(source,workspace):
 def convert(subjectCode,DTIcode):
     subject = sp.Subject(subjectCode)
 #    print subject.anat_source, subject.anat_workspace
-
-
     # check if the datas are already converted, if not, convert the data and move to the workspace
     # convert the anat data and move to the workspace
 

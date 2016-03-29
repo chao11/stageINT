@@ -13,12 +13,16 @@ import commands
 root_dir = '/hpc/crise/hao.c/data'
 subjectlist = os.listdir(root_dir)
 
-for subjectCode in subjectlist:
-# subjectCode = subjectlist[0]
+
+additonal_list = ["ACE12","NCA23","EMN02","MJN13" ]
+
+for subjectCode in additonal_list:
+
     path = "%s/%s/raw_dwi" % (root_dir,subjectCode)
 
     print(path)
     print(os.listdir(path))
+
 
     # correct the bvecs file and rename as bvecs
     if not op.isfile("%s/bvecs" % (path)):
@@ -34,11 +38,11 @@ for subjectCode in subjectlist:
     if not op.isfile("%s/bvals" % (path)):
         commands.getoutput("mv %s/*.bval %s/bvals" % (path,path))
 
+
     ## BET
-    if not op.isfile("%s/data_brain_mask" % path):
-        cmdBET = 'fsl5.0-bet %s/data %s/data_brain  -f 0.35000000000000003 -g 0 -m ' %(path,path)
+    if not op.isfile("%s/nodif_brain_mask" % path):
+        cmdBET = 'fsl5.0-bet %s/data %s/nodif_brain  -f 0.250 -g 0 -m ' %(path,path)
         print cmdBET
         commands.getoutput(cmdBET)
-        commands.getoutput("mv %s/data_brain_mask.nii.gz %s/nodif_brain_mask.nii.gz" % (path,path))
 
     print ("%s Done" % subjectCode)
