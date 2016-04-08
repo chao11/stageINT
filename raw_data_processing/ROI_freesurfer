@@ -1,0 +1,56 @@
+The freesurfer resluts are in $SUBJECTS_DIR/subject and the output of the follwing steps will be stored in workspace/data/subject
+
+Prepare: transformation matrix from Freesrfer space to DTI space. (DTI <-> original structural <-> freesurfer conformed space)
+
+# compute registration matrix from the freesurfer conformed structural space to structural space
+	tkregister2 --mov $SUBJECTS_DIR/c$i/mri/orig.mgz --targ $SUBJECTS_DIR/c$i/mri/rawavg.mgz --regheader --reg junk --fslregout freesurfer2struct.mat --noedit 
+	fsl5.0-convert_xfm -omat struct2freesurfer.mat -inverse freesurfer2struct.mat
+
+	# and compute registration from DTI space to structural space
+	echo 'compute registration matrix.................................'
+	fsl5.0-flirt -in DTI/data -ref T1/sanlm_co2_brain.nii -omat fa2struct.mat
+	fsl5.0-convert_xfm -omat struct2fa.mat -inverse fa2struct.mat 
+
+	# concatenation of the matrix so we have a registration matrix from dti to freesurfer space
+	fsl5.0-convert_xfm -omat fa2freesurfer.mat -concat struct2freesurfer.mat fa2struct.mat
+	fsl5.0-convert_xfm -omat freesurfer2fa.mat -inverse fa2freesurfer.mat
+
+_______________________________________________________________________________________________________________________________________
+1. Create seed mask: extract label and creat ROI from Freesurfer datas for FSL (seed:STS 11174 12174 STG 11134  12134)
+( Freesurfer conformed space) original file: aparc.a2009s+aseg.mgz 
+
+---->	mri_convert /hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db/ACE12/mri/aparc.a2009s+aseg.mgz /hpc/crise/hao.c/test_dwi_images/ACE12_ROI_STG/aparc_a2009_aseg2raw.nii.gz
+
+however,the result file is in Freesurfer space, need to apply a transformation(registration matrix) form Freesurfer space to target space(DTI, TI native...) (or eg: in native T1 space :mri_convert -rl $FREESURFER_HOME/subj/mri/rawavg.mgz -rt nearest input output).Or we can aply the transfoamation while probtrackx (--xfm freesurfer2fa.mat) and then do the next steps. 
+Apply the lable number as threshold:
+---->	fsl5.0-fslmaths /hpc/crise/hao.c/test_dwi_images/ACE12_ROI_STG/aparc_a2009_aseg2raw.nii.gz  -uthr 11134 -thr 11134 /hpc/crise/hao.c/test_dwi_images/ACE12_ROI/lh_STG_freesurfer_rawavg.nii.gz
+---->	fsl5.0-fslmaths /hpc/crise/hao.c/test_dwi_images/ACE12_ROI_STG/aparc_a2009_aseg2raw.nii.gz  -uthr 11174 -thr 11174 /hpc/crise/hao.c/test_dwi_images/ACE12_ROI/lh_STS_freesurfer_rawavg.nii.gz
+---->	fsl5.0-fslmaths lh_STG_freesurfer_rawavg.nii.gz -add lh_STS_freesurfer_rawavg.nii.gz lh_STSG_roi.nii.gz
+---->   fslmaths input -bin output (binarise the image)
+
+_________________________________________________________________________________________________________________________________________________
+2. Create target mask: here we need to substract several labels from the parcellation file :
+see the parcel_number_list.txt, substract the regions with'-' : 
+
+	fsl5.0-fslmaths aparc_a2009_aseg2raw.nii.gz -thr 0 -uthr 8 target_mask/sub1.nii.gz
+	fsl5.0-fslmaths aparc_a2009_aseg2raw.nii.gz -thr 14 -uthr 16 target_mask/sub2.nii.gz
+	fsl5.0-fslmaths aparc_a2009_aseg2raw.nii.gz -thr 24 -uthr 24 target_mask/sub3.nii.gz
+	fsl5.0-fslmaths aparc_a2009_aseg2raw.nii.gz -thr 28 -uthr 47 target_mask/sub4.nii.gz
+	fsl5.0-fslmaths aparc_a2009_aseg2raw.nii.gz -thr 60 -uthr 85 target_mask/sub5.nii.gz
+
+	fsl5.0-fslmaths target_mask/sub1.nii.gz -add target_mask/sub2.nii.gz -add target_mask/sub3.nii.gz -add target_mask/sub4.nii.gz -add target_mask/sub5.nii.gz -add seed_mask/lh_STSG_roi.nii.gz -add seed_mask/rh_STSG_roi.nii.gz target_mask/sub_target.nii.gz
+
+	fsl5.0-fslmaths aparc_a2009_aseg2raw.nii.gz -sub target_mask/sub_target.nii.gz target_mask/target_mask.nii.gz
+the result mask is in the Freesurfer space.
+
+_________________________________________________________________________________________________________________________________________________
+3. Probtrackx:
+-x seedpath: *h_STSG_.nii.gz 
+--xfm: freesurfer2fa.mat 
+-m:subject/DTI/nodif_brain_mask
+--dir: subject/trackto/seed_STsg_destrieux_oversampled
+--target2= target_mask
+ex: 
+
+fsl5.0-probtrackx2 -x /hpc/crise/hao.c/test_dwi_images/ACE12_ROI/seed_mask/lh_STSG_bin.nii.gz -l --onewaycondition --omatrix2 --target2=/hpc/crise/hao.c/test_dwi_images/ACE12_ROI/target_mask/target_mask.nii.gz -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --xfm=/hpc/crise/hao.c/test_dwi_images/ACE12_ROI/xfm_freesurfer/freesurfer2fa.mat --forcedir --opd -s /hpc/crise/hao.c/data/ACE12/raw_dwi.bedpostX/merged -m /hpc/crise/hao.c/data/ACE12/raw_dwi.bedpostX/nodif_brain_mask --dir=/hpc/crise/hao.c/test_dwi_images/ACE12_ROI/trackto/seed_lh_STSG_destrieux
+
