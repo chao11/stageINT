@@ -9,7 +9,7 @@ import commands
 import os
 import os.path as op
 import numpy as np
-from sklearn.cluster import WardAgglomeration
+from sklearn.cluster import AgglomerativeClustering
 from sklearn.cluster import KMeans
 from sklearn.cluster import spectral_clustering
 from scipy import sparse
@@ -67,21 +67,24 @@ for subject in subjects_list[0:1]:
                     connect_use2[index]=[i,j,k]
     #
                     index=index+1
-
+    print 'connect_use2:',connect_use2.shape
     #==============================================================================
     # CLUSTERING STAGE
     # USE WARD
-    connect = joblib.load(conn_matrix_path)
+    conn_matrix_seed2parcels = joblib.load(conn_matrix_path)
+    connect = conn_matrix_seed2parcels[0]
+    print 'connectivity matrix seed2targets:',connect.shape
 
     print 'compute adjacency matrix...'
     # compute the adjacency matrix over the target mask
     from sklearn.neighbors import kneighbors_graph
-    connectivity = kneighbors_graph(connect_use2, 7)
+    connectivity = kneighbors_graph(connect, 7,include_self=False)
+    print 'data samples connectivity matrix :',connectivity.shape
 
     print 'ward clustering...'
     #   perform a hierarchical clustering considering spatial neighborhood
-    ward = WardAgglomeration(n_clusters = nb_cluster, connectivity=connectivity)
-    ward.fit(connect_use2)
+    ward = AgglomerativeClustering(n_clusters = nb_cluster, linkage='ward',connectivity=connectivity)
+    ward.fit(connect)
     labelsf = ward.labels_
 # the labels are the final labels of each voxels
 
