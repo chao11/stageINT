@@ -12,9 +12,9 @@ import sys
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 
-#for subject in subjects_list:
-for ind, arg in enumerate(sys.argv[1:]):
-    subject = arg
+for subject in subjects_list:
+#for ind, arg in enumerate(sys.argv[1:]):
+ #   subject = arg
 
     # define directories
     subject_dir = op.join(root_dir,subject)
@@ -67,8 +67,10 @@ for ind, arg in enumerate(sys.argv[1:]):
             target_inds = np.where(target_labels==current_label)[0]
             conn_matrix_parcelated[:,label_ind] = c[:,target_inds].sum(1).squeeze()
 
-        # save matrix
+        # save matrix in disk
         output_path = op.join(output_tracto_dir,'conn_matrix_seed2parcels.jl')
         joblib.dump([conn_matrix_parcelated,labels],output_path,compress=3)
         print('{}: saved reduced connectivity matrix!!'.format(subject))
         print "the shape of the connectivity matrix is ",conn_matrix_parcelated.shape
+
+        # joblib.load( conn_matrix_seed2parcels) type:list
