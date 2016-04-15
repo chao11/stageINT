@@ -1,5 +1,9 @@
 #! /usr/bin/python -u
 
+# run this in batch:
+# frioul_batch -M "[['RWT28','RLN27'], ['RH']]" ../../python_scripts/co_matrix/run_in_batch_read_probtrack_Matrix.py
+
+
 import numpy as np
 from scipy import sparse
 import nibabel as nb
