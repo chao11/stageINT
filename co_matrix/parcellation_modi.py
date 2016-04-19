@@ -1,44 +1,75 @@
-# HAO.C 12/04/2016
-# seed parcellation/clustering using Ward's method
+#! /usr/bin/python -u
+# coding=utf-8
 
+# HAO.C 12/04/2016
+# seed parcellation /clustering using Ward's method
+
+# run in batch with parameters: < subject, cluster number, hemisphere(lh/rh)>
+# exemple cmd: frioul_batch -M "[['AHS22'],[10], ['lh'] ]" ../../python_scripts/co_matrix/parcellation_modi.py
 import sys
 import nibabel as nib
 import joblib
-import commands
 
 import os
 import os.path as op
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.cluster import KMeans
-from sklearn.cluster import spectral_clustering
-from scipy import sparse
+
+"""
+#parametre par défaur
+subject = 'AHS22'  # subjects_list = os.listdir(root_dir)
+nb_cluster = 5
+hemisphere = 'lh'
+norma = 'none'
+"""
+
+subject = str(sys.argv[1])
+hemisphere = str(sys.argv[2])
+nb_cluster = int(sys.argv[3])
+norma = str(sys.argv[4])
+
+# ==================================
+# options for normalisation: 1. 'none': without normalisation (default)
+#                            2. 'norm1': normalisation by l2
+#                            3. 'standard': standardize the feature by removing the mean and scaling to unit variance
+#                            4. '
 
 
 
-# nb_cluster = int(sys.argv[4])
-nb_cluster = 2
 
 root_dir = '/hpc/crise/hao.c/data'
-subjects_list = os.listdir(root_dir)
+print('Processing subject {} for {},cluster={}, norma: {}...'.format(subject,hemisphere,nb_cluster,norma))
 
-for subject in subjects_list[0:1]:
-#    subject = arg
-     # define directories
-    subject_dir = op.join(root_dir,subject)
-    fs_seg_dir = op.join(subject_dir,'freesurfer_seg')
-    seed_path = op.join(fs_seg_dir,'lh_STS+STG.nii.gz')
-    target_path = op.join(fs_seg_dir,'target_mask.nii.gz')
-    output_tracto_dir = op.join(subject_dir,'tracto','LH_STS+STG_destrieux')
-    fdt_fullmatrix_path = op.join(output_tracto_dir,'fdt_matrix2.dot')
-    conn_matrix_path = op.join(output_tracto_dir,'conn_matrix_seed2parcels.jl')
 
-    output_name = 'parcellisation_ward_2cluster.nii.gz'
-    output_path = op.join(output_tracto_dir,output_name)
+# define directories
+subject_dir = op.join(root_dir,subject)
+fs_seg_dir = op.join(subject_dir,'freesurfer_seg')
+seed_path = op.join(fs_seg_dir,'{}_STS+STG.nii.gz'.format(hemisphere))
+target_path = op.join(fs_seg_dir,'target_mask.nii.gz')
+output_tracto_dir = op.join(subject_dir,'tracto','{}_STS+STG_destrieux'.format(hemisphere.upper()))
+fdt_fullmatrix_path = op.join(output_tracto_dir,'fdt_matrix2.dot')
+conn_matrix_path = op.join(output_tracto_dir,'conn_matrix_seed2parcels.jl')
 
-    #==============================================================================
-    #loading the datas : seed masks, target masks and connectivity matrix fdt_matrix2.dot
-    #loading the seed
+output_name = subject + '_' +hemisphere.upper() + '_seed_parcellisation_cl' + str(nb_cluster) + norma +'.nii.gz'
+output_path = op.join(output_tracto_dir,output_name)
+
+file = open("{}/{}_parcellation_info.txt".format(output_tracto_dir,subject),'a+')
+
+
+if not op.isfile(conn_matrix_path):
+    print "connectivity for subject %s not exits: %s" %(subject,conn_matrix_path)
+
+
+elif op.isfile(output_path):
+    print "{} exits".format(output_name)
+
+
+else:
+    file.write('\n Processing subject {} for {},cluster={}, norma: {}...\n'.format(subject,hemisphere,nb_cluster,norma))
+
+    # ==============================================================================
+    # loading the datas : seed masks, target masks and connectivity matrix fdt_matrix2.dot
+    # loading the seed
     seedH = nib.load(seed_path)
     seed = seedH.get_data()
     mask = seed.astype(np.bool)
@@ -55,31 +86,38 @@ for subject in subjects_list[0:1]:
     #
     # ne pas utiliser NP.WHERE OU AUTRE nonzero
     for k in range(shape[2]):
-    #
+
         for j in range(shape[1]):
-    #
+
+
+
             for i in range(shape[0]-1,-1,-1):
-    #
+
                 if seed[i, j, k] > 0:
-    #
+
                     connect_use[i,j,k]=index
-    #
+
                     connect_use2[index]=[i,j,k]
-    #
+
                     index=index+1
-    print 'connect_use2:',connect_use2.shape
+
     #==============================================================================
     # CLUSTERING STAGE
     # USE WARD
     conn_matrix_seed2parcels = joblib.load(conn_matrix_path)
     connect = conn_matrix_seed2parcels[0]
-    print 'connectivity matrix seed2targets:',connect.shape
+    print connect.shape
+    file.write('connectivity matrix seed2targets:{}'.format(connect.shape))
+
+    if norma=='norm1':
+        from sklearn.preprocessing import normalize
+        connect_norm = normalize(connect,norm='l2')
+        connect = connect_norm
 
     print 'compute adjacency matrix...'
     # compute the adjacency matrix over the target mask
     from sklearn.neighbors import kneighbors_graph
-    connectivity = kneighbors_graph(connect, 7,include_self=False)
-    print 'data samples connectivity matrix :',connectivity.shape
+    connectivity = kneighbors_graph(connect_use2, 7,include_self=False)
 
     print 'ward clustering...'
     #   perform a hierarchical clustering considering spatial neighborhood
@@ -87,6 +125,17 @@ for subject in subjects_list[0:1]:
     ward.fit(connect)
     labelsf = ward.labels_
 # the labels are the final labels of each voxels
+
+    label_list = np.unique(labelsf)
+    print "final label list: unique :",np.unique(labelsf)
+
+    parcellation_size = np.zeros(len(label_list))
+    for label in label_list:
+        #parcellation_size[i]=labelsf.count(i)
+        parcellation_size[label] = len(labelsf[labelsf==label])
+
+    #    print "pacrcel %d size: %d" %(label,len(labelsf[labelsf==label]))
+    print parcellation_size
 
     #==============================================================================
     #saving the parcellation to a NIFTI1 image
@@ -109,3 +158,10 @@ for subject in subjects_list[0:1]:
     sFinal=nib.Nifti1Image(parcellation_data, seedH.get_affine())
     nib.save(sFinal, output_path)
 
+    for label in np.unique(parcellation_data):
+
+        file.write("pacrcel %d size: %d \n" %(label,len(parcellation_data[parcellation_data==label])))
+
+    file.close()
+
+    print "done: ",output_path
