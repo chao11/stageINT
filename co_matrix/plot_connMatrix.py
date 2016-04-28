@@ -10,18 +10,16 @@ subjects_list = os.listdir(root_dir)
 hemisphere = 'lh'
 
 Nb_subject = len(subjects_list)
-
-
-
 options = ['norm1','norm2','standard','MinMax']
 
-for option in options[1:]:
+
+for option in options:
     plt.figure()
     indx = 1
 
     for subject in subjects_list:
 
-        matrix = joblib.load('/hpc/crise/hao.c/data/{}/tracto/{}_STS+STG_destrieux/conn_matrix_norma_{}.jl'.format(subject,hemisphere.upper(),option))
+        matrix = joblib.load('/hpc/crise/hao.c/data/{}/tracto/{}_STS+STG_destrieux/conn_matrix_norma_{}_0.jl'.format(subject,hemisphere.upper(),option))
         #matrix = connect_jl[0]
 
         plt.subplot(Nb_subject,1,indx)
@@ -32,12 +30,13 @@ for option in options[1:]:
 
     # add the title
     plt.subplot(Nb_subject,1,1)
-    plt.title('normalised conn_matrix: %s' %option)
+    plt.title('normalize each feature of the conn_matrix: %s' %option)
 
 
-    plt.savefig('/hpc/crise/hao.c/resultat_images/conn_matrix_norma_{}.png'.format(option))
+    plt.savefig('/hpc/crise/hao.c/resultat_images/conn_matrix_feature_norma_{}.png'.format(option))
 
 """
+# plot the oroginal connectivity matrix
 indx =1
 for subject in subjects_list:
 

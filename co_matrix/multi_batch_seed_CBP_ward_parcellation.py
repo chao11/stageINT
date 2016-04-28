@@ -21,12 +21,13 @@ import sys
 
 
 hemisphere = str(sys.argv[1])
-nb_cluster = int(sys.argv[2])
-norma = str(sys.argv[3])
+norma = str(sys.argv[2])
+nb_cluster = int(sys.argv[3])
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 
+#for nb_cluster in range(9,22,2):
 for subject in subjects_list:
     cmd ='frioul_batch -M "[[\'%s\'], [\'%s\'],[%s],[\'%s\'] ]" /hpc/crise/hao.c/python_scripts/co_matrix/parcellation_modi.py  ' %( subject, hemisphere, str(nb_cluster), norma)
     print cmd

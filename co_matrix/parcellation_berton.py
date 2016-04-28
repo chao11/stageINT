@@ -23,7 +23,8 @@ from scipy import sparse
 
 print 'loading...'
 
-option_cluster=int(sys.argv[1])
+#option_cluster=int(sys.argv[1])
+option_cluster = 1
 #==============================================================================
 # USER SETTABLE PARAMETERS
 # option_cluster :  1=ward clustering (RECOMMENDED)
@@ -32,21 +33,29 @@ option_cluster=int(sys.argv[1])
 #                   4=FSL-like clustering (hard segmentation)
 #==============================================================================
 # to perform a segmentation based on the freesurfer segmentation
-option_percent = int(sys.argv[2])
-
-option_print_matrix=int(sys.argv[3])
+#option_percent = int(sys.argv[2])
+option_percent = 0
+#option_print_matrix=int(sys.argv[3])
+option_print_matrix=0
 #intelligent subsampling
 
 # number of cluster to parcellate the seed
-nb_cluster = int(sys.argv[4])
+#nb_cluster = int(sys.argv[4])
+nb_cluster = 8
+
 #nom de la tracto : CC_RH, M1_LH, Thalamus_RH, etc
-name_tracto = sys.argv[6]
+#name_tracto = sys.argv[6]
+name_tracto= 'RH_M1'
+
 # nom du conteneur : Tracto dans mon cas
-tracto_basename = sys.argv[5]
+#tracto_basename = sys.argv[5]
+tracto_basename= 'Tracto'
+
 # seed/target name : FROM ROOT SEGMENTATION PATH (so add Right_H/Left_H if needed)
 seed_name = 'seed.nii.gz'
 #path of the subject (patient/controls)
-subject_path = sys.argv[7]
+#subject_path = sys.argv[7]
+subject_path = '/hpc/crise/takerkart/dti_gsvc/campa_data/Berton/Controles/c0001'
 #==============================================================================
 # mettre a 0 pour le moement (option irmf pas stable)
 option_irmf=0
@@ -65,8 +74,10 @@ alpha=1
 # remove the tracts that are below this limit
 # treshold level when printing the mean connectivity pattern of each parcel
 treshold=0
+
 # regularisation weight
-alpha2 = float(sys.argv[8])
+#alpha2 = float(sys.argv[8])
+alpha2 = 3
 # Tracto dans mon cas
 tracto_name = op.join(tracto_basename,name_tracto)
 # fichier de correspondance entre index des voxels et leur label dans le subsampling
@@ -75,6 +86,7 @@ coord_matrix = op.join(subject_path,tracto_name,'coords_subsampling')
 output_name = 'parcellisation_'+str(option_percent)+str(nb_cluster)+str(option_cluster)+str(alpha2)+'.nii.gz'
 #
 output_path = op.join(subject_path,tracto_name,output_name)
+output_path = '/hpc/crise/hao.c/%s' %output_name
 #
 path_target = op.join(subject_path,tracto_name,'targets.nii.gz')
 #
@@ -92,6 +104,7 @@ if option_cluster == 4:
 seedH = nib.load(path_seed)
 #
 seed = seedH.get_data()
+print "seed unique",np.unique(seed)
 #
 # m1 : how many non-zeros in seed (could have used numpy nonzero function...)
 m1 = sum(sum(sum(1 for i in row if i > 0) for row in row2) for row2 in seed)
@@ -120,6 +133,8 @@ for k in range(shape[2]):
                 connect_use2[index]=[i,j,k]
 #
                 index=index+1
+
+print "connect_use2.shape" , connect_use2.shape
 #==============================================================================
 # when using option percent 1, one doesn't need to load the connectivity matrix fdt_matrix
 # neither the target .nii.gz, one juste need seed_to_*
@@ -300,6 +315,8 @@ elif option_percent == 1:
 #
     connect = Mat_proportion
 
+
+print "connect size" ,np.unique(connect)
 # CLUSTERING STAGE
 # USE WARD
 if option_cluster == 1:
@@ -318,7 +335,8 @@ if option_cluster == 1:
     # compute the adjacency matrix over the target mask
     from sklearn.neighbors import kneighbors_graph
     connectivity = kneighbors_graph(connect_use2,7)
-    
+    print 'connectivity for ward:' ,connectivity
+
     print 'ward clustering...'
 #   perform a hierarchical clustering considering spatial neighborhood
     ward = WardAgglomeration(n_clusters = nb_cluster, connectivity=connectivity)    

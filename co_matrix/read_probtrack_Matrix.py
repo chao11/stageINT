@@ -11,16 +11,15 @@ import sys
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
+hemisphere = str(sys.argv[1])
 
 for subject in subjects_list:
-#for ind, arg in enumerate(sys.argv[1:]):
- #   subject = arg
 
     # define directories
     subject_dir = op.join(root_dir,subject)
     fs_seg_dir = op.join(subject_dir,'freesurfer_seg')
     target_path = op.join(fs_seg_dir,'target_mask.nii.gz')
-    output_tracto_dir = op.join(subject_dir,'tracto','RH_STS+STG_destrieux')
+    output_tracto_dir = op.join(subject_dir,'tracto','{}_STS+STG_destrieux'.format(hemisphere.upper()))
     fdt_fullmatrix_path = op.join(output_tracto_dir,'fdt_matrix2.dot')
     output_path = op.join(output_tracto_dir,'conn_matrix_seed2parcels.jl')
 

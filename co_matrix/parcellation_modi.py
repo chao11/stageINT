@@ -19,7 +19,7 @@ from sklearn.cluster import AgglomerativeClustering
 #parametre par défaur
 subject = 'AHS22'  # subjects_list = os.listdir(root_dir)
 nb_cluster = 5
-hemisphere = 'lh'
+hemisphere = 'lh'frio
 norma = 'none'
 """
 
@@ -28,12 +28,13 @@ hemisphere = str(sys.argv[2])
 nb_cluster = int(sys.argv[3])
 norma = str(sys.argv[4])
 
-# ==================================
+# ======================================================================================================================
 # options for normalisation: 1. 'none': without normalisation (default)
-#                            2. 'norm1': normalisation by l2
-#                            3. 'standard': standardize the feature by removing the mean and scaling to unit variance
-#                            4. '
-
+#                            2. 'norm1': normalisation by l1
+#                            3. 'norm2': normalisation by l2
+#                            4. 'standard': standardize the feature by removing the mean and scaling to unit variance
+#                            5. 'MinMax': MinMaxScaler, scale the features between a givin minimun and maximum, often between (0,1)
+# ======================================================================================================================
 
 
 
@@ -104,21 +105,19 @@ else:
     #==============================================================================
     # CLUSTERING STAGE
     # USE WARD
-    conn_matrix_seed2parcels = joblib.load(conn_matrix_path)
-    connect = conn_matrix_seed2parcels[0]
+    conn_matrix = joblib.load(conn_matrix_path)
+    connect = conn_matrix[0]
+
     print connect.shape
     file.write('connectivity matrix seed2targets:{}'.format(connect.shape))
 
-    if norma=='norm1':
-        from sklearn.preprocessing import normalize
-        connect_norm = normalize(connect,norm='l2')
-        connect = connect_norm
-
+    # ======connectivity (constrain) matrix==========================================
     print 'compute adjacency matrix...'
     # compute the adjacency matrix over the target mask
     from sklearn.neighbors import kneighbors_graph
     connectivity = kneighbors_graph(connect_use2, 7,include_self=False)
 
+    # ======clustering=============================================================
     print 'ward clustering...'
     #   perform a hierarchical clustering considering spatial neighborhood
     ward = AgglomerativeClustering(n_clusters = nb_cluster, linkage='ward',connectivity=connectivity)
