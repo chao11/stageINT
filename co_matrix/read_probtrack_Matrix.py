@@ -1,4 +1,5 @@
 #! /usr/bin/python -u
+# load the fdt_matrix.dot file (2.5~3G) and compute the connectivity matrix. this method takes more than 5 hours or even more and need large memory for calculate
 
 import numpy as np
 from scipy import sparse
@@ -13,7 +14,7 @@ root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 hemisphere = str(sys.argv[1])
 
-for subject in subjects_list:
+for subject in subjects_list[1:2]:
 
     # define directories
     subject_dir = op.join(root_dir,subject)
