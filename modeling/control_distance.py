@@ -1,3 +1,6 @@
+#! /usr/bin/python -u
+# coding=utf-8
+
 # compute the distance between each voxel and the centre of targets
 
 import os
@@ -9,6 +12,7 @@ import time
 import sys
 
 # read the coordinates of seed =========================================================================================
+# the coordinate are the seme for
 def read_coord(coord_file_path):
 
     with open(coord_file_path,'r') as f:
@@ -45,17 +49,21 @@ def target_center(target_path):
     return center_coords
 
 
-hemisphere = 'lh'
-parcel_alta = 'destrieux'
+#hemisphere = 'lh'
+#parcel_alta = 'destrieux'
+
+hemisphere = str(sys.argv[1])
+parcel_alta = str(sys.argv[2])
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 
-target_base = 'freesurfer_seg/target_mask_{}.nii.gz'.format(parcel_alta)
+target_base = 'freesurfer_seg/{}_target_mask_{}.nii.gz'.format(hemisphere,parcel_alta)
 tracto  = 'tracto/{}_STS+STG_{}'.format(hemisphere.upper(), parcel_alta)
 
 for subject in subjects_list:
 
+    print "calculatingg %s %s %s distance control model" %(subject, hemisphere, parcel_alta)
     # load target mask and seed coordinates
     target_path = op.join(root_dir, subject, target_base)
     center_coords = target_center(target_path)
@@ -69,7 +77,7 @@ for subject in subjects_list:
         for j in range(dist_mat.shape[1]):
             dist_mat[i,j] = np.sqrt(np.sum((seed_coord[i]-center_coords[j])**2))
     print dist_mat.shape
-    output_path = op.join(root_dir, subject,tracto, 'distance_control')
 
+    output_path = op.join(root_dir, subject,'modeling', '{}_distance_control_{}.jl'.format(hemisphere,parcel_alta))
     joblib.dump(dist_mat, output_path, compress=3)
-    print "distance connectivity saved"
+    print "model saved\n"

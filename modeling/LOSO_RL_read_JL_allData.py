@@ -1,12 +1,12 @@
 # This script in similar to LOSO_RL_loopsubject.py
-
+# LOSO: leave one subject out
 # Instead of reading the connectivity matrix and functional response of each subject, it load the whole X and beta
 # lh_destrieux_All_subj_XYdata.jl stores three files:
 # [0]:subject
 # [1]:X = connectivity matrix = N_voxel*163_target,
 # [2]:Y = betas = N_voxel*40_beta
 
-# Attention: in _All_subj_XYdata.jl, NAN values found in betas : voxel indice in ACE12 : [10640,10641,10743],
+# Attention: NAN values found in betas : voxel indice in ACE12 : [10640,10641,10743],
 # use _All_subj_XYdata_removeNAN.jl
 
 
@@ -72,7 +72,7 @@ beta = data[2]
 
 
 # NAN value may be found in some voxels, remove them from the dataset
-# remove nan:
+# remove nan and update data
 nan_ind = np.unique(np.where(np.isnan(beta))[0])
 if len(nan_ind)>0:
     print "find NAN in dataset, remove and update"
@@ -80,7 +80,7 @@ if len(nan_ind)>0:
     X = np.delete(X, nan_ind, 0)
     beta = np.delete(beta, nan_ind, 0)
 
-    output = '/hpc/crise/hao.c/model_result/%s_%s_All_subj_XYdata_removeNAN.jl'%(hemisphere, parcel_altas)
+    output = '/hpc/crise/hao.c/model_result/{}_{}_All_subj_XYdata_removeNAN.jl'.format(hemisphere, parcel_altas)
     joblib.dump([subject, X, beta],output ,compress=3)
 
 
@@ -90,12 +90,12 @@ con = transform_beta2con(beta, contrast=1)
 # print np.where(np.isnan(con1))
 
 subjects_list = np.unique(subject)
-loov = cross_validation.LeaveOneOut(len(subjects_list))
-MAE =np.zeros(len(loov))
+loso = cross_validation.LeaveOneOut(len(subjects_list))
+MAE =np.zeros(len(loso))
 index = np.arange(0,len(subject), 1)
 
-# ===== split subjects for LOOV=============
-for train_index, test_index in loov:
+# ===== split subjects for LOSO (Leave One Subject Out)=============
+for train_index, test_index in loso:
     # print ("Train:",train_index,"Test:",test_index)
     print "loov: " + str(test_index)
     subject_test= [subjects_list[index] for index in test_index]
@@ -125,3 +125,4 @@ for train_index, test_index in loov:
     coeff, predict, MAE[test_index] = learn_model(X_train, Y_train, X_test, Y_test)
 
 print "mean MAE:",np.mean(MAE)
+
