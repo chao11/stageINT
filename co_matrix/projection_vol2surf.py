@@ -8,31 +8,38 @@ import os.path as op
 import commands
 
 
-hemi = 'lh'
-parcel_name = 'cl7none'
-
+hemi = 'rh'
+parcel_name = 'cl5norm2'
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 
-for subject in subjects_list[2:]:
+for subject in subjects_list:
 
     subject_dir = op.join(root_dir,subject)
     tarcto_dir = op.join(subject_dir,'tracto','{}_STS+STG_destrieux'.format(hemi.upper()))
     src_volume = op.join(tarcto_dir,'{}_{}_seed_parcellisation_{}.nii.gz'.format(subject,hemi.upper(),parcel_name))
 
-    parcell_dir = op.join(subject_dir,'parcellation',hemi.upper())
+    parcell_dir = op.join(subject_dir,'CBP_cluster',hemi.upper())
     output_path = '{}/{}.{}.gii'.format(parcell_dir,hemi.lower(),parcel_name)
+    if not op.isdir(parcell_dir):
+        os.mkdir(parcell_dir)
 
+    if not op.isfile(output_path):
     # project the volume on a surface
-    cmd ='mri_vol2surf --src {} --regheader {} --hemi {} --o {}  --out_type gii --projfrac 0.5'.format(src_volume,subject,hemi,output_path)
-    print cmd
-    #commands.getoutput(cmd)
+        cmd ='mri_vol2surf --src {} --regheader {} --hemi {} --o {}  --out_type gii --projfrac 0.5'.format(src_volume,subject,hemi,output_path)
+        print cmd
+        commands.getoutput(cmd)
+
+
 """
-        cmd2='mris_convert /hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db/{}/surf/{}.inflated {}/{}.inflated.gii'.format(subject,hemi,parcell_dir,hemi)
-        cmd3='mris_convert /hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db/{}/surf/{}.white {}/{}.white.gii'.format(subject,hemi,parcell_dir,hemi)
-        print cmd2
-        print cmd3
-        commands.getoutput(cmd2)
-        commands.getoutput(cmd3)
+    # convert *h.white and *h.inflated surface for anatomist display:
+AHS22_LH_seed_parcellisation_cl2norm2.nii.gz
+    cmd2='mris_convert /hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db/{}/surf/{}.inflated {}/{}.inflated.gii'.format(subject,hemi,parcell_dir,hemi)
+    cmd3='mris_convert /hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db/{}/surf/{}.white {}/{}.white.gii'.format(subject,hemi,parcell_dir,hemi)
+    print cmd2
+    print cmd3
+    commands.getoutput(cmd2)
+    commands.getoutput(cmd3)
 """
+

@@ -31,7 +31,8 @@ subjects_list = os.listdir(root_dir)
 
 for subject in subjects_list:
    # for nb_cluster in cluster:
-    cmd ='frioul_batch -M "[[\'%s\'], [\'%s\'],[%s],[\'%s\'] ]" /hpc/crise/hao.c/python_scripts/co_matrix/parcellation_modi.py  ' %( subject, hemisphere, str(nb_cluster), norma)
+
+    cmd ='frioul_batch -M "[[\'%s\'], [\'%s\'],[%s],[\'%s\'] ]" /hpc/crise/hao.c/python_scripts/co_matrix/parcellation_volume.py  ' %( subject, hemisphere, str(nb_cluster), norma)
     print cmd
 
-    commands.getoutput(cmd)
+    #commands.getoutput(cmd)

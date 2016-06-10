@@ -52,14 +52,14 @@ def nomalisation(connect,norma, axis=1):
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 #hemisphere = str(sys.argv[1])
-hemisphere = 'lh'
+hemisphere = 'rh'
 options = ['norm1','norm2','standard','MinMax']
 axis = 0
 
-for option in options:
+for option in options[1:2]:
 
   #  plt.figure(indx1)
-    for subject in subjects_list:
+    for subject in subjects_list[2:]:
         print "processing {},{}".format(subject, option)
         subject_dir = op.join(root_dir,subject)
         tracto_dir = op.join(subject_dir,'tracto','{}_STS+STG_destrieux'.format(hemisphere.upper()))
@@ -71,7 +71,7 @@ for option in options:
         matrix_norma = nomalisation(conn_matrix,norma= option ,axis=axis)
 
      # save matrix:
-        output_path = op.join(tracto_dir,'conn_matrix_norma_{}_{}.jl'.format(option,axis))
+        output_path = op.join(tracto_dir,'conn_matrix_norma_{}.jl'.format(option))
         joblib.dump(matrix_norma,output_path,compress=3)
         print('{}: saved {} normalised connectivity matrix!!'.format(subject, option))
 
