@@ -11,6 +11,9 @@ import commands
 hemi = 'rh'
 parcel_name = 'cl5norm2'
 
+# freesurfer execute directory:
+fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
+# user's workspace
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 
@@ -27,7 +30,7 @@ for subject in subjects_list:
 
     if not op.isfile(output_path):
     # project the volume on a surface
-        cmd ='mri_vol2surf --src {} --regheader {} --hemi {} --o {}  --out_type gii --projfrac 0.5'.format(src_volume,subject,hemi,output_path)
+        cmd ='%s/mri_vol2surf --src {} --regheader {} --hemi {} --o {}  --out_type gii --projfrac 0.5'.format(fs_exec_dir, src_volume,subject,hemi,output_path)
         print cmd
         commands.getoutput(cmd)
 
