@@ -10,7 +10,8 @@ import commands
 root_dir = '/hpc/crise/hao.c/data'
 subjectlist = os.listdir(root_dir)
 nbr = len(subjectlist)
-print nbr, subjectlist[nbr-1]
+
+
 
 for subjectCode in subjectlist:
     path = "%s/%s/raw_dwi" % (root_dir,subjectCode)

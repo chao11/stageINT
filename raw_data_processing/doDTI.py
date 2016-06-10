@@ -16,9 +16,6 @@ import FDT_functions as FDT
 
 """
 # convert DICOM to Nii
-doc = pd.read_csv('/hpc/crise/hao.c/VOICELOC_list/completeDTIlist.csv')
-subjectlist = doc["Subject CODE"]
-
 incompleteList = []
 for subjectCode in additonal_list:
 
@@ -39,13 +36,15 @@ print (incompleteList)
 
 root_dir = '/hpc/crise/hao.c/data'
 
-additonal_list = ["RBA19" ]
 subjectlist = os.listdir(root_dir)
-for subjectCode in subjectlist:
+
+additonal_list = ['ACE12']
+
+for subjectCode in additonal_list:
     path = "%s/%s/raw_dwi" % (root_dir,subjectCode)
 
    # FDT.eddyCorrect(subjectCode, path)
    # FDT.bvec_bval_correct(path)
    # FDT.bet(subjectCode, path)
-   # FDT.bedpost_batch(subjectCode,path)
-    #FDT.registration(subjectCode)
+    FDT.bedpost_batch(subjectCode,path)
+    FDT.registration(subjectCode)

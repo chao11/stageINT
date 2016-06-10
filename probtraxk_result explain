@@ -1,0 +1,20 @@
+ The “fdt_path” file is your tractography result, the “fdt_matrix?.dot” ( ? can be 1,2,or 3 ) file is the connectivity matrix. You can import this file to matlab by using the following command line
+
+X = load(‘fdt_matrix2.dot’);
+CM = spconvert(X);
+
+The connectivity matrix will be saved in the variable “CM” as a sparse matrix. Or you can use this line to make it into a full matrix.
+
+CM = full(spconvert(X))
+
+Now, the most important piece of information: the voxel coordination is saved in “ coor_for_fdt_matrix?.nii.gz” file. ( Again, ? can be 1,2,or 3 ). To use this file, use the following command line (make sure that you already added freesurfer/matlab to your path):
+
+Coor = load_nifti(‘coor_for_fdt_matrix2.nii.gz’)
+Coor is a 5 by N matrix. The first three columns are the X, Y, Z coordinates of the voxels in your seed or mask (depending on which matrix options you choose). The fifth row is their voxel index in the connectivity matrix. 
+(in our case we get seed voxel index)
+
+
+
+
+1. run 'read_probtrack_Matrix.py' convert the fdt-matrix.dot to connectivity matrix with the dimension of M*163, M voxels in seed mask and 163 targets
+the result is saved by joblib as a list. list[0]is the conectivity matrix and list[1] is the lable numbers
