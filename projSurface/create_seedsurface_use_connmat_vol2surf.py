@@ -17,7 +17,7 @@ import commands
 
 
 subject = 'AHS22'
-hemi = 'lh'
+hemi = 'rh'
 altas = 'destrieux'
 #projection_method = '--projfrac-avg 0 1 0.1'
 projection_method = '--projfrac 0.5'
