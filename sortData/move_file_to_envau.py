@@ -6,10 +6,10 @@ import commands
 import sys
 import os.path as op
 
-hemisphere = 'RH'
+hemisphere = 'LH'
 #hemisphere = str(sys.argv[1])
 
-tarcto_parcel = 'aparcaseg'
+altas = 'aparcaseg'
 
 #tarcto_parcel = str(sys.argv[2])
 
@@ -19,7 +19,7 @@ subjects_list = os.listdir(root_dir)
 for subject in subjects_list:
     subject_dir = op.join(root_dir,subject)
     #tracto_dir = op.join(subject_dir,'tracto','{}_STS+STG_{}'.format(hemisphere.upper(),tarcto_parcel))
-    tracto_dir = op.join(subject_dir,'tracto','LH_STS+STG_target_mask_aparcaseg_python')
+    tracto_dir = op.join(subject_dir,'tracto','%s_STS+STG_%s_2'%(hemisphere.upper(),altas))
   #  cmd = 'mv /hpc/crise/hao.c/data/%s/raw_dwi /envau/work/crise/hao.c/data/%s/' %(subject,subject)
 
     if op.isfile('%s/fdt_matrix2.zip'%tracto_dir):
