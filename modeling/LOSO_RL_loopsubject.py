@@ -16,7 +16,7 @@ import numpy as np
 from sklearn import cross_validation, linear_model
 import sys
 import matplotlib.pylab as plt
-
+import commands
 
 def learn_model(x_train, y_train, x_test, y_test):
 
@@ -261,14 +261,18 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
             predict_nii[c[0],c[1],c[2]] = predi[i]
 
         img = nib.Nifti1Image(predict_nii, nib.load(y_test_path).get_affine())
-        img_output_path = op.join(predict_subject, '{}_{}_predi_{}.nii'.format(hemisphere, model, y_file))
-        img.to_filename(img_output_path)
+        predict_output_path = op.join(predict_subject, '{}_{}_{}_predi_{}.nii.gz'.format(hemisphere, model, parcel_altas, y_file))
+        img.to_filename(predict_output_path)
 
+        proj2surf_path = op.join(predict_subject, '{}_{}_{}_predi_{}.gii'.format(hemisphere, model, parcel_altas, y_file))
+        cmd ='%s/mri_vol2surf --src {} --regheader {} --inflated --hemi {} --o {}  --out_type gii --projfrac 0.5'.format(fs_exec_dir, predict_output_path, subject,hemisphere, proj2surf_path)
+        print cmd
+        commands.getoutput(cmd)
     print "mean MAE:", np.mean(MAE)
 
     plt.plot(MAE)
-    plt.title('MAE of %s_%s_%s, mean: %s' %(hemisphere, model, y_file, str(np.mean(MAE))))
-    plt.savefig('/hpc/crise/hao.c/model_result/{}_{}_{}_{}_norma{}.png'.format(hemisphere,parcel_altas, model, y_file, str(norma)))
+    plt.title('MAE of %s_%s_%s, mean: %s' %(hemisphere, parcel_altas, model, y_file, str(np.mean(MAE))))
+    plt.savefig('/hpc/crise/hao.c/model_result/{}_{}_{}_{}_norma{}.png'.format(hemisphere, parcel_altas, model, y_file, str(norma)))
 
     return np.mean(MAE)
 
@@ -288,14 +292,15 @@ y_file = str(sys.argv[4])
 """
 norma = 1
 
+fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 fMRI_dir = '/hpc/banco/voiceloc_full_database/func_voiceloc'
 
 dlist = []
-for p in parcel_altas:
-    for h in hemisphere:
+for p in parcel_altas[0:1]:
+    for h in hemisphere[0:1]:
         for y in y_file:
 
             y_basedir = 'nomask_singletrialbetas_spm12_stats/resampled_fs5.3_space/{}.nii'.format(str(y))
