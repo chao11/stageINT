@@ -1,9 +1,10 @@
 # hao.c
 # 10/06/2016
 """
-create surfacic seed mask use the connectivity matrix:
+compute the surfacic connectivity matrix.
+create surfacic seed mask use the connectivity matrix and compute the surfacic connectivity matrix:
 separate the connectivity matrix and create the profile image (Nifti) for each target, project the volume nto surface (mri_vol2surf)
-sum all the profile and compute the seed on surface
+sum all the projection and extract the connectivity profile for the seed region.
 
 """
 import nibabel as nib
