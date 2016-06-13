@@ -17,9 +17,9 @@ import joblib as jl
 import commands
 
 
-hemi = 'lh'
+hemi = 'rh'
 altas = 'destrieux'
-nb_clusters = 3
+nb_clusters = 4
 
 # freesurfer setup:
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
@@ -38,17 +38,27 @@ parcellation_path=op.join(tracto_dir,'parcel_surface')
 mesh_path = op.join(subject_path,'surface', 'lh_surf_proj_inflated_fdtpath.gii')
 # path_target = op.join(subject_path,'freesurfer_seg', 'target_mask_destrieux.nii.gz')
 
-seegroi_nii_path = op.join(subject_path,'freesurfer_seg', '{}_STS+STG.nii'.format(hemi))
-seedroi_gii_path = op.join(subject_path,'freesurfer_seg', '{}_seed.gii'.format(hemi))
+seegroi_nii_path = op.join(subject_path,'freesurfer_seg', '{}_STS+STG.nii.gz'.format(hemi))
+seedroi_gii_path = op.join(subject_path,'freesurfer_seg', '{}_STS+STG.gii'.format(hemi))
 
 surfacic_connmat_path = op.join(tracto_dir, 'surfacic_connectivity_profile_STSSTG_{}.jl'.format(hemi.lower()))
-gii_tex_parcellation_path=op.join(parcellation_path,'parcellation.gii')
+gii_tex_parcellation_path=op.join(parcellation_path,'parcellation_cl{}.gii'.format(nb_clusters))
 
 connmat_path = op.join(tracto_dir,'conn_matrix_seed2parcels.jl')
 connmat_proj_path = op.join(tracto_dir, 'surfacic_connectivity_profile_STSSTG_{}.jl'.format(hemi.lower()))
 coord_file_path = op.join(tracto_dir, 'coords_for_fdt_matrix2')
 
 seed_nii = nib.load(seegroi_nii_path)
+
+print 'subject ID: {}\n surface parcellation for {}, altas = {}, number of clusters = {}'.format(subject, hemi, altas, nb_clusters)
+
+# ============== project the seed roi volume mask onto surface==========================================================
+if not op.isfile(seedroi_gii_path):
+    print 'project the seed roi volume mask onto surface'
+    proj_cmd = '%s/mri_vol2surf --src %s --o %s --out_type gii --regheader %s --hemi %s %s  ' % (fs_exec_dir, seegroi_nii_path, seedroi_gii_path, subject, hemi, projection_method )
+    commands.getoutput(proj_cmd)
+    print 'seed roi gii: {}'.format(seedroi_gii_path)
+
 
 # ================== compute surfacic connectivity matrix===============================================================
 print 'compute surfacic connectivity matrix......'
@@ -133,7 +143,7 @@ seedroi_data = seedroi_gii.darrays[0].data # the values of seed vertex
 surfmask_inds = np.flatnonzero(seedroi_data) # return the indices that are non-zeros in seedroi_data
 
 # perform a hierarchical clustering considering spatial neighborhood (ward)
-print 'ward:......'
+print 'ward: number of clusters:{}'.format(nb_clusters)
 g = ng.read(mesh_path)
 triangles = g.darrays[1].data
 
