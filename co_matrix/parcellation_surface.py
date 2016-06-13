@@ -134,6 +134,7 @@ print "surfacic_connectivity_profile saved \n {} \n".format(connmat_proj_path)
 
 
 # load connectivity matrix
+
 surf_connmat = jl.load(surfacic_connmat_path)
 print "surfacic connectivity matrix: {} ".format(surf_connmat.shape)
 
