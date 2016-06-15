@@ -57,27 +57,34 @@ parcel_alta = str(sys.argv[2])
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
-
-target_base = 'freesurfer_seg/{}_target_mask_{}.nii.gz'.format(hemisphere,parcel_alta)
 tracto  = 'tracto/{}_STS+STG_{}'.format(hemisphere.upper(), parcel_alta)
+
+#target_base = 'freesurfer_seg/{}_target_mask_{}.nii.gz'.format(hemisphere,parcel_alta)
+# old dextrieux target mask:
+target_name = 'freesurfer_seg/target_mask_{}_163.nii.gz'.format(parcel_alta)
+
+output_filename = '{}_distance_control_{}_163target.jl'.format(hemisphere,parcel_alta)
 
 for subject in subjects_list:
 
-    print "calculatingg %s %s %s distance control model" %(subject, hemisphere, parcel_alta)
-    # load target mask and seed coordinates
-    target_path = op.join(root_dir, subject, target_base)
-    center_coords = target_center(target_path)
+    target_path = op.join(root_dir, subject, target_name)
+    output_path = op.join(root_dir, subject,'control_model_distance', output_filename)
 
-    coord_file_path = op.join(root_dir, subject, tracto, 'coords_for_fdt_matrix2')
-    seed_coord = read_coord(coord_file_path)
+    if not op.isfile(output_path):
+        print "calculatingg %s %s %s distance control model" %(subject, hemisphere, parcel_alta)
+        # load target mask and seed coordinates
 
-    # calculate the distance between each voxel andthe center of the target
-    dist_mat = np.zeros((seed_coord.shape[0],len(center_coords)))
-    for i in range(dist_mat.shape[0]):
-        for j in range(dist_mat.shape[1]):
-            dist_mat[i,j] = np.sqrt(np.sum((seed_coord[i]-center_coords[j])**2))
-    print dist_mat.shape
+        center_coords = target_center(target_path)
 
-    output_path = op.join(root_dir, subject,'modeling', '{}_distance_control_{}.jl'.format(hemisphere,parcel_alta))
-    joblib.dump(dist_mat, output_path, compress=3)
-    print "model saved\n"
+        coord_file_path = op.join(root_dir, subject, tracto, 'coords_for_fdt_matrix2')
+        seed_coord = read_coord(coord_file_path)
+
+        # calculate the distance between each voxel andthe center of the target
+        dist_mat = np.zeros((seed_coord.shape[0],len(center_coords)))
+        for i in range(dist_mat.shape[0]):
+            for j in range(dist_mat.shape[1]):
+                dist_mat[i,j] = np.sqrt(np.sum((seed_coord[i]-center_coords[j])**2))
+        print dist_mat.shape
+
+        joblib.dump(dist_mat, output_path, compress=3)
+        print "model saved\n"
