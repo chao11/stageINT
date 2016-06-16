@@ -24,12 +24,12 @@ import commands
 hemi = str(sys.argv[1])
 altas = str(sys.argv[2])
 
-
 projection_method = '--projfrac-avg 0 1 0.1'
 #projection_method = '--projfrac 0.5'
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 subject_list = os.listdir(root_dir)
+
 for subject in subject_list:
 
     subject_path = op.join(root_dir,subject)
@@ -47,7 +47,7 @@ for subject in subject_list:
     connmat_path = op.join(tracto_dir,'conn_matrix_seed2parcels.jl')
     connmat_proj_path = op.join(tracto_dir, 'surfacic_connectivity_profile_STSSTG_{}.jl'.format(hemi.lower()))
 
-    if not op.isfile(connmat_proj_path):
+    if  op.isfile(connmat_proj_path):
         print('\ncompute subject :{}, {}, {}'.format(subject, hemi, altas))
         # ============== project the seed roi volume mask onto surface==========================================================
         if not op.isfile(seedroi_gii_path):
@@ -120,17 +120,17 @@ for subject in subject_list:
         # extract the profile of the seed region and compute the profile project on the surface
         sum = g_data.sum(axis=1)
         idx = np.where(sum!=0)[0]
+
         # compare the seef.gii with the projection:
-        print ('extract seed region: number of vertex {}'.format(len(idx)))
-        print ('number of vertex in seed gifti file:{}'.format(len(seedroi_gii_data[seedroi_gii_data==1])))
+        nb_sumprofil = len(idx)
+        nb_vertex_seedroi = len(np.flatnonzero(seedroi_gii_data))
+        print ('extract seed region: number of vertex {}'.format(nb_sumprofil))
+        print ('number of vertex in seed gifti file:{}'.format(nb_vertex_seedroi))
 
-        if len(idx)!= len(seedroi_gii_data[seedroi_gii_data==1]):
-            # seedroi_gii.darrays[0].data = np.zeros(sh)
-            print('uncorrect seedroi_gii, create new seed region gifti file')
-            seedroi_gii.darrays[0].data[:]=0
-            seedroi_gii.darrays[0].data[idx]=1
-            ng.write(seedroi_gii, seedroi_gii_path)
-
+        print('correct seedroi_gii surface mask')
+        seedroi_gii.darrays[0].data[:]=0
+        seedroi_gii.darrays[0].data[idx]=1
+        ng.write(seedroi_gii, seedroi_gii_path)
 
         connmat_proj = g_data[idx,:]
 
@@ -140,6 +140,7 @@ for subject in subject_list:
         jl.dump(connmat_proj, connmat_proj_path, compress=3)
         print "surfacic_connectivity_profile saved: \n %s " %connmat_proj_path
 
+#       check the seedroi gifti file again to make sure the number of vertex correspond to the surfacic matrix
         print('new seed gifti file shape:{}'.format(ng.read(seedroi_gii_path).darrays[0].data.shape))
 
 
