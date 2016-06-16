@@ -20,19 +20,11 @@ import sys
 import joblib as jl
 import commands
 
-"""
-hemi = 'lh'
-altas = 'destrieux'
-nb_clusters = 3
-subject = 'AMA02'
-
-"""
 subject = str(sys.argv[1])
 hemi = str(sys.argv[2])
 nb_clusters = int(sys.argv[3])
 altas = str(sys.argv[4])
 
-surface = 'white'
 
 # freesurfer setup:
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
@@ -88,6 +80,7 @@ surf_connmat = normalize(surf_connmat,norm='l2')
 # read surface seed roi mask
 seedroi_gii = ng.read(seedroi_gii_path)
 seedroi_data = seedroi_gii.darrays[0].data # the values of seed vertex
+print seedroi_data.shape
 surfmask_inds = np.flatnonzero(seedroi_data) # return the indices that are non-zeros in seedroi_data
 
 # perform a hierarchical clustering considering spatial neighborhood (ward)

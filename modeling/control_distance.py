@@ -48,6 +48,7 @@ def target_center(target_path):
 
     return center_coords
 
+# =================================== main =============================================================================
 
 #hemisphere = 'lh'
 #parcel_alta = 'destrieux'

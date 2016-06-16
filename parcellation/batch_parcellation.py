@@ -27,7 +27,7 @@ altas = str(sys.argv[3])
 
 hemi = 'rh'
 altas = 'destrieux'
-nb_clusters = 3
+nb_clusters = 5
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
@@ -45,4 +45,4 @@ for subject in subjects_list:
         cmd = 'python /hpc/crise/hao.c/python_scripts/parcellation/parcellation_surface.py {} {} {} {} '.format(subject, hemi, nb_clusters, altas)
         print cmd
 
-        #commands.getoutput(cmd)
+        commands.getoutput(cmd)

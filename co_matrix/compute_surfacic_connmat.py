@@ -30,7 +30,7 @@ fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 subject_list = os.listdir(root_dir)
 
-for subject in subject_list:
+for subject in subject_list[0:1]:
 
     subject_path = op.join(root_dir,subject)
     tracto_name = '{}_STS+STG_{}'.format(hemi.upper(), altas)
@@ -45,9 +45,9 @@ for subject in subject_list:
     coord_file_path = op.join(tracto_dir, 'coords_for_fdt_matrix2')
 
     connmat_path = op.join(tracto_dir,'conn_matrix_seed2parcels.jl')
-    connmat_proj_path = op.join(tracto_dir, 'surfacic_connectivity_profile_STSSTG_{}.jl'.format(hemi.lower()))
+    connmat_proj_path = op.join(tracto_dir, 'surfacic_connectivity_profile_STSSTG_{}_proj05.jl'.format(hemi.lower()))
 
-    if  op.isfile(connmat_proj_path):
+    if  not op.isfile(connmat_proj_path):
         print('\ncompute subject :{}, {}, {}'.format(subject, hemi, altas))
         # ============== project the seed roi volume mask onto surface==========================================================
         if not op.isfile(seedroi_gii_path):
