@@ -13,9 +13,9 @@ import sys
 hemi = str(sys.argv[1])
 altas = str(sys.argv[2])
 nb_target = str(sys.argv[3])
-batchmode = 'off'
+batchmode = 'off' # by default, just print the command but don't run it
 
-batchmode = str(sys.argv[4])
+batchmode = str(sys.argv[4]) # run = launch the command
 
 root_dir = '/hpc/crise/hao.c/data'
 SUBJECTS_DIR ="/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db"
@@ -41,7 +41,7 @@ for subject in subjectList:
 
     mat_dot = op.join(output_tracto_dir,'fdt_matrix2.dot')
 
-
+    #if not op.isfile(op.join(output_tracto_dir, 'lookup_tractspace_fdt_matrix2.nii.gz')):
     if not op.isfile(mat_dot) and not op.isfile(op.join(output_tracto_dir,'fdt_matrix2.zip')):
 
         #commands.getoutput('rm -rf %s' %output_tracto_dir)
@@ -58,7 +58,7 @@ for subject in subjectList:
 
         print cmd
 
-        if batchmode=='on':
+        if batchmode=='run':
             commands.getoutput(cmd)
 
 
