@@ -19,27 +19,27 @@ import time
 import sys
 import zipfile
 
-
-tracto_parcel = 'target_mask_aparcaseg_python'
-hemisphere = 'lh'
-#subject = 'AHS22'
-
 """
-
-#subject = str(sys.argv[1])
+tracto_parcel = 'destrieux_2'
+hemisphere = 'rh'
+#subject = 'AHS22'
+target = 'destrieux_165'
+"""
 hemisphere = str(sys.argv[1])
 tracto_parcel = str(sys.argv[2])
-"""
+target =  str(sys.argv[3])
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 
-for subject in subjects_list[1:2]:
+for subject in subjects_list:
 
     subject_dir = op.join(root_dir, subject)
     fs_seg_dir = op.join(subject_dir, 'freesurfer_seg')
     seed_path = op.join(fs_seg_dir, '{}_STS+STG.nii.gz'.format(hemisphere.lower()))
-    target_path = op.join(fs_seg_dir, '{}.nii.gz'.format(tracto_parcel))
+
+    target_name = '{}_target_mask_{}.nii.gz'.format(hemisphere, target)
+    target_path = op.join(fs_seg_dir, target_name)
 
     tracto_dir = op.join(subject_dir, 'tracto','{}_STS+STG_{}'.format(hemisphere.upper(),tracto_parcel))
     fdt_fullmatrix_path = op.join(tracto_dir, 'fdt_matrix2.zip')
@@ -106,6 +106,7 @@ for subject in subjects_list[1:2]:
         target_coords_path = op.join(tracto_dir, 'tract_space_coords_for_fdt_matrix2')
         target_coords = np.loadtxt(target_coords_path).astype(np.int)
         n_target_voxels = target_coords.shape[0]
+        print n_target_voxels
 
         target_labels = np.zeros(n_target_voxels,dtype=np.int)
         for i in range(n_target_voxels):
@@ -116,6 +117,7 @@ for subject in subjects_list[1:2]:
         c = conn_matrix.tocsc()
         labels = np.unique(target_labels)
         n_target_parcels = labels.size
+        print(n_target_parcels)
         conn_matrix_parcelated = np.zeros([n_seed_voxels,n_target_parcels])
         for label_ind, current_label in enumerate(labels):
             target_inds = np.where(target_labels==current_label)[0]
