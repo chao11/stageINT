@@ -31,12 +31,14 @@ for subject in subjects_list:
                 #commands.getoutput(cmd)
 
                 predict_subject = op.join(root_dir, subject,'predict')
-                predict_output_path = op.join(predict_subject, '{}_{}_{}_predi_{}.nii.gz'.format(hemisphere, model, parcel_altas, y_file))
-                if op.isfile(predict_output_path):
-                    proj2surf_path = op.join(predict_subject, '{}_{}_{}_predi_{}.gii'.format(hemisphere, model, parcel_altas, y_file))
-                    cmd ='{}/mri_vol2surf --src {} --regheader {} --hemi {} --o {}  --out_type gii --projfrac 0.5 --surf white'.format(fs_exec_dir, predict_output_path, subject,hemisphere, proj2surf_path)
+                predict_nii_path = op.join(predict_subject, '{}_{}_{}_predi_{}.nii.gz'.format(hemisphere, model, parcel_altas, y_file))
+                proj2surf_path = op.join(predict_subject, '{}_{}_{}_predi_{}.gii'.format(hemisphere, model, parcel_altas, y_file))
+
+                if op.isfile(predict_nii_path) or (not op.isfile(proj2surf_path)):
+
+                    cmd ='{}/mri_vol2surf --src {} --regheader {} --hemi {} --o {}  --out_type gii --projfrac 0.5 --surf white'.format(fs_exec_dir, predict_nii_path, subject,hemisphere, proj2surf_path)
                     print cmd
-                    commands.getoutput(cmd)
+                   # commands.getoutput(cmd)
                 else :
                     print('no predict file')
 
