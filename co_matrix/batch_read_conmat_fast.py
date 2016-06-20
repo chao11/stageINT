@@ -7,14 +7,14 @@ import os.path as op
 import commands
 import sys
 
-
+"""
 hemisphere = 'lh'
 tracto_parcel = 'aparcaseg'
 
 """
 tracto_parcel = str(sys.argv[2])
 hemisphere = str(sys.argv[1])
-"""
+
 root_dir = '/hpc/crise/hao.c/data'
 
 subjects_list = os.listdir(root_dir)

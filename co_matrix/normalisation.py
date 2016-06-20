@@ -52,14 +52,14 @@ def nomalisation(connect,norma, axis=1):
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 #hemisphere = str(sys.argv[1])
-hemisphere = 'rh'
+hemisphere = 'lh'
 options = ['norm1','norm2','standard','MinMax']
 axis = 0
 
-for option in options[1:2]:
+for option in options:
 
   #  plt.figure(indx1)
-    for subject in subjects_list[2:]:
+    for subject in subjects_list[0:1]:
         print "processing {},{}".format(subject, option)
         subject_dir = op.join(root_dir,subject)
         tracto_dir = op.join(subject_dir,'tracto','{}_STS+STG_destrieux'.format(hemisphere.upper()))
