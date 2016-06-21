@@ -17,6 +17,9 @@ from sklearn import cross_validation, linear_model
 import sys
 import matplotlib.pylab as plt
 import commands
+from sklearn.metrics import r2_score
+import pandas as pd
+
 
 def learn_model(x_train, y_train, x_test, y_test):
 
@@ -143,23 +146,11 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
         mask = seed.get_data()
         check_coords(coord,mask)
     """
-    """
-    # set the model: dixtance comtrol model or connectivity matrix modeling:
-    if model=='distance':
-    #
-        filename = op.join('control_model_distance','{0}_distance_control_{1}.jl'.format(hemisphere, parcel_altas))
-    #
-    else:
-    #
-        filename = op.join(tracto_dir, 'conn_matrix_seed2parcels.jl')
-
-    print "modeling %s altas: %s, \nY :%s, \nX:%s, norma:%s \n" %(hemisphere, parcel_altas, y_file, filename, str(norma))
-    """
     # set the number of target:
     #
     if parcel_altas == 'destrieux':
     #
-        nb_target = 163  # 165 for new target mask
+        nb_target = 165  # 165 for new target mask
     #
     elif parcel_altas=='aparcaseg':
     #
@@ -187,6 +178,7 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
     print "loov:", len(loov)
 
     MAE =np.zeros(len(loov))
+    r2 = np.zeros(len(loov))
     #
     # ===== splite subjects for LOOV=============
     for train_index, test_index in loov:
@@ -243,16 +235,17 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
 
     #   LEARN MODEL
         coeff, predi, MAE[test_index] = learn_model(X_train, Y_train, X_test, Y_test)
+        r2[test_index] = r2_score(Y_test, predi)
+        print 'r2: ', r2[test_index]
 
-#
         # save the predict values
         predict_subject = op.join(root_dir, subject_test[0], 'predict')
         if not op.isdir(predict_subject):
             os.mkdir(predict_subject)
 
-        predict_output = op.join(predict_subject, '{}_{}_predi_{}.jl'.format(hemisphere, model, y_file))
+        predict_output = op.join(predict_subject, '{}_{}_{}_predi_{}.jl'.format(hemisphere, model, parcel_altas,  y_file))
 
-        joblib.dump([test_seed_coord,predi], predict_output, compress=3)
+        joblib.dump([test_seed_coord, predi], predict_output, compress=3)
 
         # save the predict map
         predict_nii = np.zeros((256,256,256))
@@ -264,32 +257,41 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
         predict_output_path = op.join(predict_subject, '{}_{}_{}_predi_{}.nii.gz'.format(hemisphere, model, parcel_altas, y_file))
         img.to_filename(predict_output_path)
 
-        proj2surf_path = op.join(predict_subject, '{}_{}_{}_predi_{}.gii'.format(hemisphere, model, parcel_altas, y_file))
-        cmd ='%s/mri_vol2surf --src {} --regheader {} --inflated --hemi {} --o {}  --out_type gii --projfrac 0.5'.format(fs_exec_dir, predict_output_path, subject,hemisphere, proj2surf_path)
-        print cmd
-        commands.getoutput(cmd)
+
     print "mean MAE:", np.mean(MAE)
 
     plt.plot(MAE)
-    plt.title('MAE of %s_%s_%s, mean: %s' %(hemisphere, parcel_altas, model, y_file, str(np.mean(MAE))))
+    plt.title('MAE of %s_%s_%s_%s, mean: %s' %(hemisphere, parcel_altas, model, y_file, str(np.mean(MAE))))
+    plt.legend()
     plt.savefig('/hpc/crise/hao.c/model_result/{}_{}_{}_{}_norma{}.png'.format(hemisphere, parcel_altas, model, y_file, str(norma)))
 
-    return np.mean(MAE)
+    print "mean R2 score:", np.mean(r2)
+
+    plt.plot(r2)
+    plt.title('r2 of %s_%s_%s_%s, mean: %s' %(hemisphere, parcel_altas, model, y_file, str(np.mean(r2))))
+    plt.savefig('/hpc/crise/hao.c/model_result/r2score_{}_{}_{}_{}_norma{}.png'.format(hemisphere, parcel_altas, model, y_file, str(norma)))
+
+#   write to DataFrame
+    d = {'MAE': pd.Series(MAE,index=subjects_list), 'R2_score':pd.Series(r2, index=subjects_list) }
+    df = pd.DataFrame(d)
+
+    return df
 
 
 # ==================== main============================================================
 
-hemisphere = ['lh','rh']
-parcel_altas = ['aparcaseg', 'wmparc']
-model = 'distance'
-y_file = ['rspmT_0001','rspmT_0002','rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004']
+#hemisphere = ['lh','rh']
+#parcel_altas = ['aparcaseg', 'wmparc']
+#model = 'distance'
+#y_file = ['rspmT_0001','rspmT_0002','rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004']
+y_file = ['rspmT_0001','rcon_0001']
 
-"""
 hemisphere = str(sys.argv[1])
 parcel_altas = str(sys.argv[2])
 model = str(sys.argv[3])
-y_file = str(sys.argv[4])
-"""
+#y_file = str(sys.argv[4])
+
+
 norma = 1
 
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
@@ -297,27 +299,35 @@ fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 fMRI_dir = '/hpc/banco/voiceloc_full_database/func_voiceloc'
+tracto_dir = 'tracto/{}_STS+STG_{}_2/'.format(hemisphere.upper(),parcel_altas)
+
+output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/LOSO_result.xlsx'
 
 dlist = []
-for p in parcel_altas[0:1]:
-    for h in hemisphere[0:1]:
-        for y in y_file:
+for y in y_file:
 
-            y_basedir = 'nomask_singletrialbetas_spm12_stats/resampled_fs5.3_space/{}.nii'.format(str(y))
-            tracto_dir = 'tracto/{}_STS+STG_{}/'.format(h.upper(),p)
+    y_basedir = 'nomask_singletrialbetas_spm12_stats/resampled_fs5.3_space/{}.nii'.format(str(y))
 
-            if model=='distance':
-            #
-                filename = op.join('control_model_distance','{0}_distance_control_{1}.jl'.format(h, p))
-            #
-            else:
-            #
-                filename = op.join(tracto_dir, 'conn_matrix_seed2parcels.jl')
+    if model == 'distance':
+        filename = op.join('control_model_distance','{0}_distance_control_{1}.jl'.format(hemisphere, parcel_altas))
 
-            print "modeling %s altas: %s, \nY :%s, \nX:%s, norma:%s \n" %(h, p, y, filename, str(norma))
+    else:
+        filename = op.join(tracto_dir, 'conn_matrix_seed2parcels.jl')
 
-            mean_MAE = loso_model(h, p, model, y, norma)
-            d = {'altas': p, 'hemisphere': h, 'model':model, 'y_file' :y, 'mean_MAE': mean_MAE}
+    print "modeling %s altas: %s, \nY :%s, \nX:%s, norma:%s \n" %(hemisphere, parcel_altas, y, filename, str(norma))
 
-            dlist.append(d)
+#   modeling:
+    result_dataframe = loso_model(hemisphere, parcel_altas, model, y, norma)
+
+#   save the predict file
+    outpt_sheet_name = ('%s_%s_%s_%s' %(hemisphere, parcel_altas, model, y, norma))
+    result_dataframe.to_excel(output_predict_score_excel_file, sheet_name=outpt_sheet_name)
+
+#   mean score of this set of LOSO
+    d = {'altas': parcel_altas, 'hemisphere': hemisphere, 'model':model, 'y_file' :y, 'mean_MAE': result_dataframe.mean(0)[0], 'R2':result_dataframe.mean(0)[1]}
+
+    dlist.append(d)
 print dlist
+
+
+
