@@ -24,7 +24,7 @@ norma = str(sys.argv[3])
 
 
 """
-subject = 'AMA02'
+subject = 'AHS22'
 hemisphere = 'lh'
 
 
@@ -35,10 +35,10 @@ fs_seg_dir = op.join(subject_dir,'freesurfer_seg')
 output_tracto_dir = op.join(subject_dir,'tracto','{}_STS+STG_destrieux'.format(hemisphere.upper()))
 
 
-cluster = np.arange(5,22,2)
+cluster = np.arange(3,9,2)
 options = ['none','norm1','norm2','MinMax']
 
-for norma in options[1:]:
+for norma in options:
 
     avg = []
     for nb_cluster in cluster:
@@ -55,7 +55,7 @@ for norma in options[1:]:
             conn_matrix_path = op.join(output_tracto_dir,'conn_matrix_norma_{}.jl'.format(norma))
             connect = joblib.load(conn_matrix_path)
 
-        connect = np.exp(connect)
+        # connect = np.exp(connect)
         ward = joblib.load(ward_outout)
         labelsf = ward.labels_
 
@@ -81,7 +81,7 @@ plt.ylabel('silhouette_avg')
 plt.legend()
 
 plt.title("average silhouette score")
-plt.savefig('{}/cluster_silhouette_{}.png'.format(output_tracto_dir,norma))
+plt.savefig('{}/cluster_silhouette_{}_2.png'.format(output_tracto_dir,norma))
 
 
 # ========================================================================================================================

@@ -13,8 +13,8 @@ import sys
 hemi = str(sys.argv[1])
 altas = str(sys.argv[2])
 nb_target = str(sys.argv[3])
-batchmode = 'off' # by default, just print the command but don't run it
 
+batchmode = 'off' # by default, just print the command but don't run it
 batchmode = str(sys.argv[4]) # run = launch the command
 
 root_dir = '/hpc/crise/hao.c/data'
@@ -49,8 +49,8 @@ for subject in subjectList:
         cmd =   "frioul_batch 'fsl5.0-probtrackx2 -x %s --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 \
         --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --xfm=%s \
         --forcedir --opd -s %s -m %s --dir=%s --omatrix2 --target2=%s'" %(seed_path,xfm_path, bedpostx_path, mask_path, output_tracto_dir, target_path)
-        """
 
+        """
         cmd =  'fsl5.0-probtrackx2 -x %s --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 \
         --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --xfm=%s \
         --forcedir --opd -s %s -m %s --dir=%s --omatrix2 --target2=%s'%(seed_path,xfm_path, bedpostx_path, mask_path, output_tracto_dir, target_path)

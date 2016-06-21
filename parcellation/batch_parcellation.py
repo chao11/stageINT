@@ -25,7 +25,7 @@ nb_cluster = int(sys.argv[2])
 altas = str(sys.argv[3])
 """
 
-hemi = 'rh'
+hemi = 'lh'
 altas = 'destrieux'
 nb_clusters = 5
 
@@ -45,4 +45,4 @@ for subject in subjects_list:
         cmd = 'python /hpc/crise/hao.c/python_scripts/parcellation/parcellation_surface.py {} {} {} {} '.format(subject, hemi, nb_clusters, altas)
         print cmd
 
-        commands.getoutput(cmd)
+       # commands.getoutput(cmd)
