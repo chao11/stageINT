@@ -19,6 +19,7 @@ import matplotlib.pylab as plt
 import commands
 from sklearn.metrics import r2_score
 import pandas as pd
+from openpyxl import load_workbook
 
 
 def learn_model(x_train, y_train, x_test, y_test):
@@ -260,16 +261,16 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
 
     print "mean MAE:", np.mean(MAE)
 
-    plt.plot(MAE)
-    plt.title('MAE of %s_%s_%s_%s, mean: %s' %(hemisphere, parcel_altas, model, y_file, str(np.mean(MAE))))
-    plt.legend()
-    plt.savefig('/hpc/crise/hao.c/model_result/{}_{}_{}_{}_norma{}.png'.format(hemisphere, parcel_altas, model, y_file, str(norma)))
+  #  plt.plot(MAE)
+  #  plt.title('MAE of %s_%s_%s_%s, mean: %s' %(hemisphere, parcel_altas, model, y_file, str(np.mean(MAE))))
+  #  plt.legend()
+  #  plt.savefig('/hpc/crise/hao.c/model_result/{}_{}_{}_{}_norma{}.png'.format(hemisphere, parcel_altas, model, y_file, str(norma)))
 
     print "mean R2 score:", np.mean(r2)
 
-    plt.plot(r2)
-    plt.title('r2 of %s_%s_%s_%s, mean: %s' %(hemisphere, parcel_altas, model, y_file, str(np.mean(r2))))
-    plt.savefig('/hpc/crise/hao.c/model_result/r2score_{}_{}_{}_{}_norma{}.png'.format(hemisphere, parcel_altas, model, y_file, str(norma)))
+  #  plt.plot(r2)
+  #  plt.title('r2 of %s_%s_%s_%s, mean: %s' %(hemisphere, parcel_altas, model, y_file, str(np.mean(r2))))
+  #  plt.savefig('/hpc/crise/hao.c/model_result/r2score_{}_{}_{}_{}_norma{}.png'.format(hemisphere, parcel_altas, model, y_file, str(norma)))
 
 #   write to DataFrame
     d = {'MAE': pd.Series(MAE,index=subjects_list), 'R2_score':pd.Series(r2, index=subjects_list) }
@@ -283,8 +284,8 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
 #hemisphere = ['lh','rh']
 #parcel_altas = ['aparcaseg', 'wmparc']
 #model = 'distance'
-#y_file = ['rspmT_0001','rspmT_0002','rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004']
-y_file = ['rspmT_0001','rcon_0001']
+y_file = ['rspmT_0001','rspmT_0002','rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004']
+#y_file = ['rspmT_0001','rcon_0001']
 
 hemisphere = str(sys.argv[1])
 parcel_altas = str(sys.argv[2])
@@ -319,15 +320,21 @@ for y in y_file:
 #   modeling:
     result_dataframe = loso_model(hemisphere, parcel_altas, model, y, norma)
 
-#   save the predict file
-    outpt_sheet_name = ('%s_%s_%s_%s' %(hemisphere, parcel_altas, model, y, norma))
-    result_dataframe.to_excel(output_predict_score_excel_file, sheet_name=outpt_sheet_name)
+#   save the predict file to a new worksheet
+#   load excel file(workbook)
+    book = load_workbook(output_predict_score_excel_file)
+    writer = pd.ExcelWriter(output_predict_score_excel_file, engine='openpyxl')
+    writer.book = book
+    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+#   save the result to a new worksheet
+    outpt_sheet_name = ('%s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
+    result_dataframe.to_excel(writer, outpt_sheet_name)
+    writer.save()
+
 
 #   mean score of this set of LOSO
     d = {'altas': parcel_altas, 'hemisphere': hemisphere, 'model':model, 'y_file' :y, 'mean_MAE': result_dataframe.mean(0)[0], 'R2':result_dataframe.mean(0)[1]}
 
     dlist.append(d)
 print dlist
-
-
 
