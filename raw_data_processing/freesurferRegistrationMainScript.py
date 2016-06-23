@@ -18,11 +18,14 @@ for subj in subjectList:
     xfm = "/hpc/crise/hao.c/data/%s/freesurfer_regist" %subj
 
 #   verifier qu'il y a 6 fichier .mat et un fuchier 'junk' est cree  automatiquement par tkregist
-    if os.path.isdir(xfm) and len(os.listdir(xfm))==7:
+    if os.path.isdir(xfm) and len(os.listdir(xfm)) == 7:
         print '%s done'%subj
-    else:
-        shutil.rmtree(xfm)
-        os.mkdir(xfm)
+
+    else: # the files are not completed or the directory doesn't exist
+        # shutil.rmtree(xfm)
+        # if the directory doesn't exist, make dir:
+        if not os.path.isdir(xfm):
+            os.mkdir(xfm)
         os.chdir(xfm)
 
 #       registration
