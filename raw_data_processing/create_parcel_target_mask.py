@@ -1,7 +1,8 @@
+#! /usr/bin/python -u
+# coding=utf-8
+
 # hao.c
 # instead of use fslmath to create the mask, we recommend to use this python scprit
-
-
 
 import nibabel
 import os
@@ -9,41 +10,37 @@ import os.path as op
 import numpy as np
 import sys
 
+
 # create seed mask for STS+STG with the label number or aparc2009(destrieux)
-def mask_seed(subject, hemisphere):
-    print "create seed mask " + subject
-    altas_path = '/hpc/crise/hao.c/data/%s/parc_freesurfer/destrieux.nii' %subject
+def mask_seed(hemisphere, altas_name, label, seed_name):
+    print "create seed mask "
+    altas_path = op.join(fs_parcel_dir, '%s.nii' %(altas_name))
     altas_nii = nibabel.load(altas_path)
     altas = altas_nii.get_data()
 
     seed_mask = np.zeros((256,256,256))
-    if hemisphere == 'lh':
-        seed_label = [11134,11174]
-    else:
-        seed_label = [12134, 12174]
 
-    for i in seed_label:
+    for i in label:
         indice_seed = np.where(altas == i)
         seed_mask[indice_seed]=1
 
     img = nibabel.Nifti1Image(seed_mask, altas_nii.get_affine())
-    img.to_filename('/hpc/crise/hao.c/data/%s/freesurfer_seg/%s_STS+STG.nii.gz' %(subject, hemisphere))
+    output_seek_mask_path = op.join(mask_dir, '%s_%s.nii.gz'%(hemisphere, seed_name))
+    img.to_filename(output_seek_mask_path)
+    print 'save mask:' +output_seek_mask_path
+
+    return output_seek_mask_path
 
 
-# create target mask based on the cortical parcellation: aparc or aparc2009(destrieux)
-def mask_aparc(subject, hemisphere, altas):
-    print "create target mask by using " + altas +' for ' + subject + hemisphere
+# create target mask based on the gray matter cortical parcellation: aparc(aparcaseg) or aparc2009(destrieux)
+def mask_GM(seed_path, target_altas, target_name):
+    print "create gray matter target: "+target_name
+    mask_path = op.join(mask_dir, target_name)
+    altas_path = op.join(fs_parcel_dir, '%s.nii' %target_altas)
 
-    if altas in ['aparc', 'aparcaseg']:
-        altas_path = '/hpc/crise/hao.c/data/%s/parc_freesurfer/aparc+aseg.nii' %subject
-    elif altas in ['aparc2009', 'destrieux']:
-        altas_path = '/hpc/crise/hao.c/data/%s/parc_freesurfer/destrieux.nii' %subject
-
-    seed_path = '/hpc/crise/hao.c/data/%s/freesurfer_seg/%s_STS+STG.nii.gz' %(subject, hemisphere)
     altas_nii = nibabel.load(altas_path)
     mask = altas_nii.get_data()
     seed_mask = nibabel.load(seed_path).get_data()
-
     # remove seed voxels
     indice_seed = np.where(seed_mask == 1)
     mask[indice_seed] = 0
@@ -58,13 +55,13 @@ def mask_aparc(subject, hemisphere, altas):
     # print np.unique(mask)
 
     img = nibabel.Nifti1Image(mask, altas_nii.get_affine())
-    img.to_filename('/hpc/crise/hao.c/data/%s/freesurfer_seg/%s_target_mask_%s.nii.gz' %(subject, hemisphere, altas))
-
+    img.to_filename(mask_path)
+    print("save target mask: " + mask_path)
 
 # create target mask with white matter parcellation.
 # The white matter parcellation is derived from the cortical parcellation.
 # We calculate the intersection of seed region defined from wmparc2009 and the wmparc
-def mask_wmparc(subject, hemisphere ):
+def mask_WM(subject, hemisphere ):
     print "create target mask by using wmparc for "+ subject+ hemisphere
     wmparc_path = '/hpc/crise/hao.c/data/%s/parc_freesurfer/wmparc.nii' %subject
     wmparc_nii = nibabel.load(wmparc_path)
@@ -96,19 +93,44 @@ def mask_wmparc(subject, hemisphere ):
 
 # ======================main============================================================================================
 
-hemi = 'rh'
+#hemi = 'rh'
+hemi = str(sys.argv[1])
+altas = str(sys.argv[2]) # aparc ou aparc2009/destrieux
+#altas = 'aparc+aseg'
 
-#hemi = str(sys.argv[1])
-#altas = str(sys.argv[2]) # aparc ou aparc2009/destrieux
+seed_name = 'big_STS+STG'
 
-subject_list = os.listdir('/hpc/crise/hao.c/data')
+target_name = '%s_target_mask_%s_%s.nii.gz' %(hemi, altas, seed_name)
+
+root_dir = '/hpc/crise/hao.c/data'
+subject_list = os.listdir(root_dir)
+
+
+if seed_name=='small_STS+STG':
+    seed_altas = 'destrieux'
+    seed_label = [11134,11174]
+elif seed_name=='big_STS+STG':
+    seed_altas  ='aparc+aseg'
+    seed_label = [1001, 1015, 1030, 1034]
+
+if hemi=='rh':
+    seed_label = np.asarray(seed_label)+1000
+print seed_label
+
+#======================== make mask============================================================
 for i in subject_list:
-    # create seed mask:
-    # mask_seed(i,hemi)
+    mask_dir = op.join(root_dir, i, 'freesurfer_seg')
+    fs_parcel_dir = op.join(root_dir, i,'parc_freesurfer')
+    seed_path = op.join(mask_dir, '%s_%s.nii.gz'%(hemi, seed_name))
 
-    # create target mask:
-    mask_wmparc(i,hemi)
-    # mask_aparc(i,hemi, 'aparc')
+#   create seed mask:
+    if not op.isfile(seed_path):
+        mask_seed(hemi, seed_altas,  seed_label, seed_name)
+
+#   create target mask:
+    mask_GM(seed_path, altas, target_name)
+
+#   mask_aparc(i,hemi, 'aparc')
 print 'done! '
 
 
