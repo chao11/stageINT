@@ -38,7 +38,7 @@ root_dir = '/hpc/crise/hao.c/data'
 
 subject_list = os.listdir(root_dir)
 
-for subject in subject_list[0:2]:
+for subject in subject_list:
     label_basedir = op.join(root_dir, subject, 'label')
     label_outdir = op.join(label_basedir, annot)
     path = op.join(label_outdir,hemisphere)
@@ -46,7 +46,7 @@ for subject in subject_list[0:2]:
     white_surface_file = op.join(surface_dir, '%s.white.gii'%hemisphere )
 
     listOfseed = op.join(label_basedir, 'listOf_%s_STS+STG_%s.txt'%(seed, hemisphere))
-    output_seed = op.join(root_dir, subject, 'freesurfer_seg', '%s_%s_STSSTG.gii'%(hemisphere, seed))
+    output_seed = op.join(root_dir, subject, 'freesurfer_seg', '%s_%s_STS+STG.gii'%(hemisphere, seed))
 
     # check if the base dir of label exstis:
     if not op.isdir(label_basedir):
@@ -67,7 +67,13 @@ for subject in subject_list[0:2]:
     print cmd2
     commands.getoutput(cmd2)
 
-    # 3. create the suaface:
+
+    # 3. create the suaface using '*h.white.gii' surface file:
+    if not op.isfile(white_surface_file):
+        fs_surface_dir = '/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db/%s/surf/' %subject
+        cmd = '%s/mris_convert %s/lh.white %s' %(fs_exec_dir, fs_surface_dir, white_surface_file)
+        commands.getoutput(cmd)
+
     cmd3 = 'fsl5.0-label2surf -s %s -o %s -l %s' %(white_surface_file, output_seed, listOfseed)
     print(cmd3)
     commands.getoutput(cmd3)
