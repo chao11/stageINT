@@ -10,45 +10,67 @@ import sys
 #hemi = 'lh'
 #altas = 'wmparc'
 
-hemi = str(sys.argv[1])
-altas = str(sys.argv[2])
-nb_target = str(sys.argv[3])
+space = str(sys.argv[1]) #volume or surface
+hemi = str(sys.argv[2])
+seed_name = str(sys.argv[3])    # big_STSTG.gii
+target2_name = str(sys.argv[4])  #  destrieux_big_STS+STG
+n_samples = str(sys.argv[5])
 
 batchmode = 'off' # by default, just print the command but don't run it
-batchmode = str(sys.argv[4]) # run = launch the command
+batchmode = str(sys.argv[6]) # run = launch the command
 
+
+
+# by default( for volumetric tractography, no additional option
+surf_option=''
+
+fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 SUBJECTS_DIR ="/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db"
 
 subjectList = os.listdir(root_dir)
-for subject in subjectList:
+for subject in subjectList[0:1]:
 
-
+# ========================== define parameters and path =============================================
     subject_dir = op.join(root_dir,subject)
-    fs_seg_dir = op.join(subject_dir,'freesurfer_seg')
-    seed_path = op.join(fs_seg_dir,'%s_STS+STG.nii.gz' %(hemi))
+
+    mask_dir = op.join(subject_dir,'freesurfer_seg')
+    seed_path = op.join(mask_dir,'%s_%s' %(hemi, seed_name))
 
     xfm_path = op.join(subject_dir,'freesurfer_regist','freesurfer2fa.mat')
-    bedpostx_path = op.join(subject_dir,'raw_dwi.bedpostX','merged')
-    mask_path = op.join(subject_dir,'raw_dwi.bedpostX','nodif_brain_mask')
+    bedpostx_path = op.join(subject_dir,'raw_dwi.bedpostX')
+    sample_path = op.join(bedpostx_path, 'merged')
+    brainmask_path = op.join(bedpostx_path,'nodif_brain_mask')
 
-    #target_path = op.join(fs_seg_dir,'target_mask.nii')
-    target_mask_name = '%s_target_mask_%s_%s.nii.gz' %(hemi, altas, nb_target)
-    target_path = op.join(fs_seg_dir, target_mask_name)
+    target2_path = op.join(mask_dir, '%s_target_mask_%s.nii.gz' %(hemi, target2_name))
 
-    #    output_tracto_dir = op.join(subject_dir,'tracto','{}_STS+STG_destrieux'.format(hemi.upper()))
-    output_tracto_dir = op.join(subject_dir,'tracto','%s_STS+STG_%s_2'%(hemi.upper(),altas))
-
+    output_tracto_dir = op.join(subject_dir,'tracto','%s_%s_%s'%(hemi.upper(), seed_name, n_samples))
     mat_dot = op.join(output_tracto_dir,'fdt_matrix2.dot')
 
+
+# ============================ set the option for using surface:=====================================
+    if space == 'surface':
+        orig_NIFTI = op.join(root_dir,'orig.nii.gz' )
+
+#       check if orig.nii.gz exists:
+        if not op.isfile(orig_NIFTI):
+            print('convert orig.mgz to NIFTI')
+            fs_surface_dir = '/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db/%s/mri/' %subject
+            cmd = '%s/mri_convert %s/orig.mgz %s' %(fs_exec_dir, fs_surface_dir, orig_NIFTI)
+            commands.getoutput(cmd)
+
+        surf_option = '--meshspace=freesurfer --seedref=%s' %orig_NIFTI
+
+# =========================== tractography ===========================================================
     #if not op.isfile(op.join(output_tracto_dir, 'lookup_tractspace_fdt_matrix2.nii.gz')):
     if not op.isfile(mat_dot) and not op.isfile(op.join(output_tracto_dir,'fdt_matrix2.zip')):
 
         #commands.getoutput('rm -rf %s' %output_tracto_dir)
 
-        cmd =   "frioul_batch 'fsl5.0-probtrackx2 -x %s --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 \
+        cmd =   'fsl5.0-probtrackx2 -x %s --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P %s \
         --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --xfm=%s \
-        --forcedir --opd -s %s -m %s --dir=%s --omatrix2 --target2=%s'" %(seed_path,xfm_path, bedpostx_path, mask_path, output_tracto_dir, target_path)
+        --forcedir --opd -s %s -m %s --dir=%s --omatrix2 --target2=%s  %s' \
+                %(seed_path, n_samples, xfm_path, sample_path, brainmask_path, output_tracto_dir, target2_path, surf_option)
 
         """
         cmd =  'fsl5.0-probtrackx2 -x %s --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 \
@@ -59,7 +81,8 @@ for subject in subjectList:
         print cmd
 
         if batchmode=='run':
-            commands.getoutput(cmd)
+            batch_cmd = "frioul_batch '%s' " %cmd
+            commands.getoutput(batch_cmd)
 
 
 
