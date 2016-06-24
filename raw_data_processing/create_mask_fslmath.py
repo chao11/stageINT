@@ -1,3 +1,7 @@
+"""
+this script use fslmaths to extract the seed mask and target mask, this method is not recommended
+
+"""
 import os
 import os.path as op
 import commands
