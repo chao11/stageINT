@@ -62,27 +62,14 @@ def transform_beta2con(beta, contrast):
 norma = 1
 hemisphere = 'rh'
 parcel_altas = 'destrieux'
+data_file_name = '{}_{}_All_subj_XYdata_removeNAN.jl'.format(hemisphere, parcel_altas)
 
 # load data
-workpath = '/hpc/crise/hao.c/model_result/{}_{}_All_subj_XYdata_removeNAN.jl'.format(hemisphere, parcel_altas)
-data = joblib.load(workpath)
+data_path = '/hpc/crise/hao.c/model_result/AllData_jl/{}'.format(data_file_name)
+data = joblib.load(data_path)
 subject = data[0]
 X = data[1]
 beta = data[2]
-
-
-# NAN value may be found in some voxels, remove them from the dataset
-# remove nan and update data
-nan_ind = np.unique(np.where(np.isnan(beta))[0])
-if len(nan_ind)>0:
-    print "find NAN in dataset, remove and update"
-    subject = np.delete(subject, nan_ind, 0)
-    X = np.delete(X, nan_ind, 0)
-    beta = np.delete(beta, nan_ind, 0)
-
-    output = '/hpc/crise/hao.c/model_result/{}_{}_All_subj_XYdata_removeNAN.jl'.format(hemisphere, parcel_altas)
-    joblib.dump([subject, X, beta],output ,compress=3)
-
 
 
 # transform the beta values to contrast
