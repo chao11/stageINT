@@ -32,6 +32,6 @@ for subject in subjects_list:
     if not op.isfile(fdt_fullmatrix_path):
         print fdt_fullmatrix_path + ' not exsits'
     elif not op.isfile(connmatrix_path):
-        cmd ='frioul_batch -M "[[\'%s\'], [\'%s\'],[\'%s\'] ]" /hpc/crise/hao.c/python_scripts/co_matrix/read_connmatrix_fast.py  ' %( subject, hemisphere, tracto_parcel)
+        cmd ='frioul_batch -M "[[\'%s\'], [\'%s\'],[\'%s\'] ]" /hpc/crise/hao.c/python_scripts/co_matrix/read_connmatrix_fast_step3.py  ' %( subject, hemisphere, tracto_parcel)
         print cmd
         #commands.getoutput(cmd)
