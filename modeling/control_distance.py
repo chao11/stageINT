@@ -55,20 +55,18 @@ def target_center(target_path):
 
 hemisphere = str(sys.argv[1])
 parcel_alta = str(sys.argv[2])
+tarcto_name = str(sys.argv[3])
+target_base_name = str(sys.argv[4])
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
-tracto  = 'tracto/{}_STS+STG_{}'.format(hemisphere.upper(), parcel_alta)
 
-#target_base = 'freesurfer_seg/{}_target_mask_{}.nii.gz'.format(hemisphere,parcel_alta)
-# old dextrieux target mask:
-target_name = 'freesurfer_seg/target_mask_{}_163.nii.gz'.format(parcel_alta)
-
-output_filename = '{}_distance_control_{}_163target.jl'.format(hemisphere,parcel_alta)
+target_name = '{}_target_mask_{}.nii.gz'.format(hemisphere, target_base_name)  # _destrieux_big_STS+STG
+output_filename = '{}_distance_control_{}.jl'.format(hemisphere, target_base_name)
 
 for subject in subjects_list:
 
-    target_path = op.join(root_dir, subject, target_name)
+    target_path = op.join(root_dir, subject, 'freesurfer_seg', target_name)
     output_path = op.join(root_dir, subject,'control_model_distance', output_filename)
 
     if not op.isfile(output_path):
@@ -77,7 +75,7 @@ for subject in subjects_list:
 
         center_coords = target_center(target_path)
 
-        coord_file_path = op.join(root_dir, subject, tracto, 'coords_for_fdt_matrix2')
+        coord_file_path = op.join(root_dir, subject, 'tracto', '{}_STS+STG_{}'.format(hemisphere.upper(), tarcto_name),  'coords_for_fdt_matrix2')
         seed_coord = read_coord(coord_file_path)
 
         # calculate the distance between each voxel andthe center of the target

@@ -10,7 +10,7 @@ subjectlist = os.listdir(root_dir)
 os.chdir('/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db')
 
 
-for subjectCode in subjectlist[2:]:
+for subjectCode in subjectlist:
 
     os.chdir('/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db/%s/' %subjectCode)
     cmd = 'mri_convert aparc+aseg.mgz /hpc/crise/hao.c/data/%s/parc_freesurfer/aparc+aseg.nii' % subjectCode
