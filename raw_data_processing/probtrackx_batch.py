@@ -12,8 +12,9 @@ import sys
 
 space = str(sys.argv[1]) #volume or surface
 hemi = str(sys.argv[2])
-seed_name = str(sys.argv[3])    # big_STSTG.gii
-target2_name = str(sys.argv[4])  #  destrieux_big_STS+STG
+seed_name = str(sys.argv[3])    # big_STSTG
+altas = str(sys.argv[4])    # destrieux
+target2_name = '%s_%s'% (altas, seed_name)  # destrieux_big_STS+STG
 n_samples = str(sys.argv[5])
 
 batchmode = 'off' # by default, just print the command but don't run it
@@ -23,19 +24,23 @@ batchmode = str(sys.argv[6]) # run = launch the command
 
 # by default( for volumetric tractography, no additional option
 surf_option=''
+if space=='surface':
+    exten = 'gii'
+elif space == 'volume':
+    exten = 'nii.gz'
 
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 SUBJECTS_DIR ="/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db"
 
 subjectList = os.listdir(root_dir)
-for subject in subjectList[0:1]:
+for subject in subjectList:
 
 # ========================== define parameters and path =============================================
     subject_dir = op.join(root_dir,subject)
 
     mask_dir = op.join(subject_dir,'freesurfer_seg')
-    seed_path = op.join(mask_dir,'%s_%s' %(hemi, seed_name))
+    seed_path = op.join(mask_dir,'%s_%s.%s' %(hemi, seed_name, exten))
 
     xfm_path = op.join(subject_dir,'freesurfer_regist','freesurfer2fa.mat')
     bedpostx_path = op.join(subject_dir,'raw_dwi.bedpostX')
@@ -44,17 +49,18 @@ for subject in subjectList[0:1]:
 
     target2_path = op.join(mask_dir, '%s_target_mask_%s.nii.gz' %(hemi, target2_name))
 
-    output_tracto_dir = op.join(subject_dir,'tracto','%s_%s_%s'%(hemi.upper(), seed_name, n_samples))
+    output_tracto_dir = op.join(subject_dir,'tracto','%s_%s_%s_%s'%(hemi.upper(), seed_name,altas, n_samples))
     mat_dot = op.join(output_tracto_dir,'fdt_matrix2.dot')
 
 
 # ============================ set the option for using surface:=====================================
     if space == 'surface':
-        orig_NIFTI = op.join(root_dir,'orig.nii.gz' )
+        orig_NIFTI = op.join(root_dir,subject, 'orig.nii.gz' )
 
 #       check if orig.nii.gz exists:
         if not op.isfile(orig_NIFTI):
             print('convert orig.mgz to NIFTI')
+            # the convert is in interactive mode
             fs_surface_dir = '/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db/%s/mri/' %subject
             cmd = '%s/mri_convert %s/orig.mgz %s' %(fs_exec_dir, fs_surface_dir, orig_NIFTI)
             commands.getoutput(cmd)
@@ -84,5 +90,6 @@ for subject in subjectList[0:1]:
             batch_cmd = "frioul_batch '%s' " %cmd
             commands.getoutput(batch_cmd)
 
-
+    else:
+        print subject +' done!'
 
