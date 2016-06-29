@@ -1,3 +1,7 @@
+lookup_tractspace_fdt_matrix2.nii.gz the coordinates of the columns of matrix2 
+
+waytotal = nb_samples * nb_seed_voxel(or vertex)
+
  The “fdt_path” file is your tractography result, the “fdt_matrix?.dot” ( ? can be 1,2,or 3 ) file is the connectivity matrix. You can import this file to matlab by using the following command line
 
 X = load(‘fdt_matrix2.dot’);
