@@ -292,11 +292,12 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
 
     print "mean R2 score:", np.mean(r2)
 
+    """
     plt.plot(r2)
     plt.legend()
     plt.title('r2 of %s_%s_%s_%s, mean: %s' %(hemisphere, parcel_altas, model, y_file, str(np.mean(r2))))
     plt.savefig('/hpc/crise/hao.c/model_result/r2score_{}_{}_{}_{}_norma{}.png'.format(hemisphere, parcel_altas, model, y_file, str(norma)))
-
+    """
 #   write to DataFrame
     # d = {'MAE': pd.Series(MAE,index=subjects_list), 'R2_score':pd.Series(r2, index=subjects_list) }
     # df = pd.DataFrame(d)
@@ -306,17 +307,19 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
 
 # ==================== main============================================================
 
-#hemisphere = ['lh','rh']
-#parcel_altas = ['aparcaseg', 'wmparc']
-#model = 'distance'
+#hemisphere = 'rh'
+#parcel_altas = 'destrieux'
+#model = 'connmat'
 #y_file = ['rspmT_0001','rspmT_0002','rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004']
 
-y_file = ['rspmT_0001','rcon_0001']
+#y_file = ['rspmT_0001','rcon_0001']
 
 hemisphere = str(sys.argv[1])
 parcel_altas = str(sys.argv[2])
 model = str(sys.argv[3])
-#y_file = str(sys.argv[4])
+y= str(sys.argv[4])
+
+
 options = ['none', 'waytotal', 'l1', 'l2']
 
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
@@ -328,43 +331,45 @@ tracto_dir = 'tracto/{}_STS+STG_{}_2/'.format(hemisphere.upper(),parcel_altas)
 
 dict_R2 = {}
 dlist = []
-for y in y_file:
 
-    # output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/LOSO_result_compare_normalization.xlsx'
-    output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/LOSO_R2score_compare_normalization.xlsx'
+# output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/LOSO_result_compare_normalization.xlsx'
+output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/LOSO_R2score_compare_normalization.xlsx'
+writer = pd.ExcelWriter(output_predict_score_excel_file, engine='openpyxl')
 
-    for norma in options:
-
-        y_basedir = 'nomask_singletrialbetas_spm12_stats/resampled_fs5.3_space/{}.nii'.format(str(y))
-
-        if model == 'distance':
-            filename = op.join('control_model_distance','{0}_distance_control_{1}.jl'.format(hemisphere, parcel_altas))
-
-        else:
-            filename = op.join(tracto_dir, 'conn_matrix_seed2parcels.jl')
-
-        print "modeling %s altas: %s, \nY :%s, \nX:%s, norma:%s \n" %(hemisphere, parcel_altas, y, filename, str(norma))
-
-    #   modeling:
-        mea, R2, sub_list= loso_model(hemisphere, parcel_altas, model, y, norma)
-        dict_R2 [norma]= pd.Series(R2, index=sub_list)
-
-    #   mean score of this set of LOSO
-        d = {'altas': parcel_altas, 'hemisphere': hemisphere, 'model':model, 'norma':norma,  'y_file' :y, 'mean_MAE': result_dataframe.mean(0)[0], 'R2':result_dataframe.mean(0)[1]}
-        dlist.append(d)
+#for y in y_file:
 
 
-    result_dataframe = pd.DataFrame(dict_R2)
+for norma in options:
+
+    y_basedir = 'nomask_singletrialbetas_spm12_stats/resampled_fs5.3_space/{}.nii'.format(str(y))
+
+    if model == 'distance':
+        filename = op.join('control_model_distance','{0}_distance_control_{1}.jl'.format(hemisphere, parcel_altas))
+
+    else:
+        filename = op.join(tracto_dir, 'conn_matrix_seed2parcels.jl')
+
+    print "modeling %s altas: %s, \nY :%s, \nX:%s, norma:%s \n" %(hemisphere, parcel_altas, y, filename, str(norma))
+
+#   modeling:
+    mae, R2, sub_list= loso_model(hemisphere, parcel_altas, model, y, norma)
+    dict_R2 [norma]= pd.Series(R2, index=sub_list)
+
+#   mean score of this set of LOSO
+    d = {'altas': parcel_altas, 'hemisphere': hemisphere, 'model':model, 'norma':norma,  'y_file' :y, 'mean_MAE': np.mean(mae), 'R2':np.mean(R2)}
+    dlist.append(d)
+
+result_dataframe = pd.DataFrame(dict_R2)
 #   save the predict file to a new worksheet
-    writer = pd.ExcelWriter(output_predict_score_excel_file)
-    output_sheet_name = ('%s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
-    result_dataframe.to_excel(writer, output_sheet_name)
-    writer.save()
+output_sheet_name = ('%s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
+result_dataframe.to_excel(writer, output_sheet_name)
+writer.save()
 
-    result_dataframe.plot()
-    plt.title('%s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
-    plt.savefig('/hpc/crise/hao.c/model_result/r2score_{}_{}_{}_{}.png'.format(hemisphere, parcel_altas, model, y))
-
+"""
+result_dataframe.plot()
+plt.title('%s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
+plt.savefig('/hpc/crise/hao.c/model_result/r2score_{}_{}_{}_{}.png'.format(hemisphere, parcel_altas, model, y))
+"""
 print dlist
 
 
