@@ -19,29 +19,32 @@ import time
 import sys
 import zipfile
 
-"""
-tracto_parcel = 'destrieux_2'
-hemisphere = 'rh'
+hemisphere = 'lh'
 #subject = 'AHS22'
-target = 'destrieux_165'
+seed = '{}_big_STS+STG.gii'.format(hemisphere.lower())
+target = 'destrieux_big_STS+STG'
+
 """
 hemisphere = str(sys.argv[1])
 tracto_parcel = str(sys.argv[2])
 target =  str(sys.argv[3])
-
+"""
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
+
+tracto_name = 'tracto_surface/LH_big_STS+STG_destrieux_500'
+#tracto_dir = '/hpc/crise/hao.c/data/AHS22/tracto_surface/LH_big_STS+STG_destrieux_500'
 
 for subject in subjects_list:
 
     subject_dir = op.join(root_dir, subject)
     fs_seg_dir = op.join(subject_dir, 'freesurfer_seg')
-    seed_path = op.join(fs_seg_dir, '{}_STS+STG.nii.gz'.format(hemisphere.lower()))
+    seed_path = op.join(fs_seg_dir, seed)
 
     target_name = '{}_target_mask_{}.nii.gz'.format(hemisphere, target)
     target_path = op.join(fs_seg_dir, target_name)
 
-    tracto_dir = op.join(subject_dir, 'tracto','{}_STS+STG_{}'.format(hemisphere.upper(),tracto_parcel))
+    tracto_dir = op.join(subject_dir, tracto_name)
     fdt_fullmatrix_path = op.join(tracto_dir, 'fdt_matrix2.zip')
     output_path = op.join(tracto_dir, 'conn_matrix_seed2parcels.jl')
 
@@ -50,7 +53,7 @@ for subject in subjects_list:
 
 
     elif op.isfile(output_path):
-        print " connectivity matrix exists"
+        print " %s connectivity matrix exists"%subject
 
     else:
 
@@ -95,6 +98,7 @@ for subject in subjects_list:
         print(' full matrix loaded!!')
 
         # load target file
+
         target_nii = nib.load(target_path)
         target_data = target_nii.get_data()
 
@@ -126,7 +130,7 @@ for subject in subjects_list:
         print "shape of connectivity matrix:", conn_matrix_parcelated.shape
 
         # save matrix in disk
-        joblib.dump([conn_matrix_parcelated, labels], output_path,compress=3)
+        joblib.dump(conn_matrix_parcelated, output_path,compress=3)
         print('{}: saved reduced connectivity matrix!!'.format(subject))
         print "time: %s" % str(time.time()-t2)
 

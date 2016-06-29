@@ -24,8 +24,8 @@ import commands
 hemi = str(sys.argv[1])
 altas = str(sys.argv[2])
 
-projection_method = '--projfrac-avg 0 1 0.1'
-#projection_method = '--projfrac 0.5'
+#projection_method = '--projfrac-avg 0 1 0.1'
+projection_method = '--projfrac 0.5'
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 subject_list = os.listdir(root_dir)
