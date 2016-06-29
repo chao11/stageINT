@@ -168,7 +168,7 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
         check_coords(coord,mask)
     """
     # set the number of target:
-    #
+    """
     if parcel_altas == 'destrieux':
     #
         nb_target = 165  # 165 for new target mask
@@ -180,7 +180,7 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
     elif parcel_altas == 'wmparc':
     #
         nb_target = 155
-
+    """
 
     # remove the subject which doesn't have rspmT
     for i in subjects_list[:]:
@@ -230,6 +230,7 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
 
 #      base d'apprentissage:==================================================================================
         # print("train:", subject_train)
+        nb_target = X_test.shape[1]
         X_train = np.empty((0,nb_target), float)
         Y_train = np.empty(0, float)
 #
