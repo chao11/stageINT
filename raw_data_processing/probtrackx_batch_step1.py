@@ -31,7 +31,7 @@ elif space == 'volume':
 
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
-SUBJECTS_DIR ="/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db"
+fs_SUBJECTS_DIR ="/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db"
 
 subjectList = os.listdir(root_dir)
 for subject in subjectList:
@@ -48,6 +48,7 @@ for subject in subjectList:
     brainmask_path = op.join(bedpostx_path,'nodif_brain_mask')
 
     target2_path = op.join(mask_dir, '%s_target_mask_%s.nii.gz' %(hemi, target2_name))
+    white_surface = op.join(subject_dir, 'surface', '%s.white.gii'%hemi)
 
     output_tracto_dir = op.join(subject_dir,'tracto_%s' %space, '%s_%s_%s_%s' %( hemi.upper(),  seed_name, altas, n_samples))
     mat_dot = op.join(output_tracto_dir,'fdt_matrix2.dot')
@@ -61,22 +62,30 @@ for subject in subjectList:
         if not op.isfile(orig_NIFTI):
             print('convert orig.mgz to NIFTI')
             # the convert is in interactive mode
-            fs_surface_dir = '/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db/%s/mri/' %subject
-            cmd = '%s/mri_convert %s/orig.mgz %s' %(fs_exec_dir, fs_surface_dir, orig_NIFTI)
+            fs_mri_dir = op.join(fs_SUBJECTS_DIR, subject,'mri')
+            cmd = '%s/mri_convert %s/orig.mgz %s' %(fs_exec_dir, fs_mri_dir, orig_NIFTI)
             commands.getoutput(cmd)
 
         surf_option = '--meshspace=freesurfer --seedref=%s' %orig_NIFTI
 
+#   check the distribution surface file for fopd option
+    if not op.isfile(white_surface):
+        print('create *h.white.gii')
+        fs_surf_dir = op.join(fs_SUBJECTS_DIR, subject,'surf')
+        cmd = '%s/mris_convert %s/%s.white %s' %(fs_exec_dir, fs_surf_dir, hemi, white_surface)
+        commands.getoutput(cmd)
+
 # =========================== tractography ===========================================================
-    #if not op.isfile(op.join(output_tracto_dir, 'lookup_tractspace_fdt_matrix2.nii.gz')):
+
+#   if not op.isfile(op.join(output_tracto_dir, 'lookup_tractspace_fdt_matrix2.nii.gz')):
     if not op.isfile(mat_dot) and not op.isfile(op.join(output_tracto_dir,'fdt_matrix2.zip')):
 
         #commands.getoutput('rm -rf %s' %output_tracto_dir)
 
         cmd =   'fsl5.0-probtrackx2 -x %s --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P %s \
         --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --xfm=%s \
-        --forcedir --opd -s %s -m %s --dir=%s --omatrix2 --target2=%s  %s' \
-                %(seed_path, n_samples, xfm_path, sample_path, brainmask_path, output_tracto_dir, target2_path, surf_option)
+        --forcedir --opd -s %s -m %s --dir=%s --omatrix2 --target2=%s --fopd=%s  %s' \
+                %(seed_path, n_samples, xfm_path, sample_path, brainmask_path, output_tracto_dir, target2_path, white_surface, surf_option)
 
         """
         cmd =  'fsl5.0-probtrackx2 -x %s --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P 5000 \
