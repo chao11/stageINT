@@ -13,11 +13,17 @@
 import joblib
 import numpy as np
 from sklearn import cross_validation, linear_model
+import os .path as op
 
+def normaliser(x, option):
+    if option == 'l2':
+        from sklearn.preprocessing import normalize
+        x_norma = normalize(x, norm='l2')
+#   normalize by the sum of the row, ( normalized matrix sum to 1 )
+    elif option=='l1': # normalize sum to 1:
+        from sklearn.preprocessing import normalize
+        x_norma = normalize(x,norm='l1')
 
-def normaliser(x):
-    from sklearn.preprocessing import normalize
-    x_norma = normalize(x, norm='l2')
     return x_norma
 
 
@@ -62,7 +68,8 @@ def transform_beta2con(beta, contrast):
 norma = 1
 hemisphere = 'rh'
 parcel_altas = 'destrieux'
-data_file_name = '{}_{}_All_subj_XYdata_removeNAN.jl'.format(hemisphere, parcel_altas)
+#data_file_name = '{}_{}_All_subj_Xbeta_removeNAN.jl'.format(hemisphere, parcel_altas)
+data_file_name = '{}_{}_All_subj_X_rcon_rspmT.jl'.format(hemisphere, parcel_altas)
 
 # load data
 data_path = '/hpc/crise/hao.c/model_result/AllData_jl/{}'.format(data_file_name)
