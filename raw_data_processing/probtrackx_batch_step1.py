@@ -49,7 +49,7 @@ for subject in subjectList:
 
     target2_path = op.join(mask_dir, '%s_target_mask_%s.nii.gz' %(hemi, target2_name))
 
-    output_tracto_dir = op.join(subject_dir,'tracto','%s_%s_%s_%s'%(hemi.upper(), seed_name,altas, n_samples))
+    output_tracto_dir = op.join(subject_dir,'tracto_%s' %space, '%s_%s_%s_%s' %( hemi.upper(),  seed_name, altas, n_samples))
     mat_dot = op.join(output_tracto_dir,'fdt_matrix2.dot')
 
 
