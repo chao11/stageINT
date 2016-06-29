@@ -6,11 +6,10 @@ import commands
 import sys
 import os.path as op
 
-hemisphere = 'RH'
-altas = 'destrieux_2'
 
-#hemisphere = str(sys.argv[1])
-#altas = str(sys.argv[2])
+tracto_name = ''
+
+#tracto_name = str(sys.argv[1])
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
@@ -18,7 +17,8 @@ subjects_list = os.listdir(root_dir)
 for subject in subjects_list:
     subject_dir = op.join(root_dir,subject)
     #tracto_dir = op.join(subject_dir,'tracto','{}_STS+STG_{}'.format(hemisphere.upper(),tarcto_parcel))
-    tracto_dir = op.join(subject_dir,'tracto','%s_STS+STG_%s'%(hemisphere.upper(),altas))
+
+    tracto_dir = op.join(subject_dir,'tracto','%s'%(tracto_name))
   #  cmd = 'mv /hpc/crise/hao.c/data/%s/raw_dwi /envau/work/crise/hao.c/data/%s/' %(subject,subject)
 
     if op.isfile('%s/fdt_matrix2.zip'%tracto_dir):
