@@ -168,21 +168,24 @@ for i in subject_list:
 print 'done! '
 
 
+# ================================= check mask===========================================================================
 # this is only used to check if the number of targets in the mask are the same  for all the subject
-"""
+n_normal = 165
+target0 = np.unique(nibabel.load('/hpc/crise/hao.c/data/AHS22/freesurfer_seg/lh_target_mask_destrieux_big_STS+STG.nii.gz').get_data())
+
 add = []
 for i in subject_list:
-    mask = '/hpc/crise/hao.c/data/%s/freesurfer_seg/lh_target_mask_wmparc2009_big_STS+STG.nii.gz'%i
+    mask = '/hpc/crise/hao.c/data/%s/freesurfer_seg/lh_target_mask_destrieux_big_STS+STG.nii.gz'%i
     mask_nii = nibabel.load(mask).get_data()
     affine = nibabel.load(mask).get_affine()
     n_target = len(np.unique(mask_nii))
-    if n_target!= 310:
+    if n_target!= n_normal:
         add.append(i)
-
-        for j in [11134,13134]:
-            mask_nii[mask_nii==j]=0
+        diff = np.setdiff1d(np.unique(mask_nii), target0)
+        print diff
+        for j in diff:
+            mask_nii[mask_nii == i]=0
         img = nibabel.Nifti1Image(mask_nii, affine)
         img.to_filename( mask)
         print'save target mask: %s' %mask
 
-"""
