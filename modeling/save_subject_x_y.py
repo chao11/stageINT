@@ -77,8 +77,10 @@ y_data_option = 'contrast'
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 fMRI_dir = '/hpc/banco/voiceloc_full_database/func_voiceloc'
-tracto_dir = 'tracto/{}_STS+STG_{}/'.format(hemisphere.upper() ,parcel_altas)
+tracto_dir = 'tracto/{}_STS+STG_{}_2/'.format(hemisphere.upper() ,parcel_altas)
 y_base = 'nomask_singletrialbetas_spm12_stats/resampled_fs5.3_space'
+
+output = '/hpc/crise/hao.c/model_result/AllData_jl/%s_%s_2_All_subj_X_rcon_rspmT.jl'%(hemisphere, parcel_altas)
 
 # remove the subject which doesn't have rspmT
 for i in subjects_list[:]:
@@ -89,7 +91,7 @@ for i in subjects_list[:]:
 print("length of the list: " + str(len(subjects_list)))
 
 
-X = np.empty((0,163), float)
+X = np.empty((0,165), float)
 
 if y_data_option=='beta':
     Y = np.empty((0,40), float)
@@ -123,7 +125,6 @@ if len(nan_ind)>0:
 else:
     print"no NAN values"
 
-output = '/hpc/crise/hao.c/model_result/AllData_jl/%s_%s_All_subj_X_rcon_rspmT.jl'%(hemisphere, parcel_altas)
 joblib.dump([index_subject, X, Y],output ,compress=3)
 
 print"data saved in ", output
