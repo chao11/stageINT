@@ -43,8 +43,10 @@ see the parcel_number_list.txt, substract the regions with'-' :
 	fsl5.0-fslmaths aparc_a2009_aseg2raw.nii.gz -sub target_mask/sub_target.nii.gz target_mask/target_mask.nii.gz
 the result mask is in the Freesurfer space.
 
+
+###This can also be done with python code to create the target mask
 _________________________________________________________________________________________________________________________________________________
-3. Probtrackx:
+3. Probtrackx: (in volume)
 -x seedpath: *h_STSG_.nii.gz 
 --xfm: freesurfer2fa.mat 
 -m:subject/DTI/nodif_brain_mask
@@ -52,5 +54,47 @@ ________________________________________________________________________________
 --target2= target_mask
 ex: 
 
-fsl5.0-probtrackx2 -x /hpc/crise/hao.c/test_dwi_images/ACE12_ROI/seed_mask/lh_STSG_bin.nii.gz -l --onewaycondition --omatrix2 --target2=/hpc/crise/hao.c/test_dwi_images/ACE12_ROI/target_mask/target_mask.nii.gz -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --xfm=/hpc/crise/hao.c/test_dwi_images/ACE12_ROI/xfm_freesurfer/freesurfer2fa.mat --forcedir --opd -s /hpc/crise/hao.c/data/ACE12/raw_dwi.bedpostX/merged -m /hpc/crise/hao.c/data/ACE12/raw_dwi.bedpostX/nodif_brain_mask --dir=/hpc/crise/hao.c/test_dwi_images/ACE12_ROI/trackto/seed_lh_STSG_destrieux
+fsl5.0-probtrackx2 -x /hpc/crise/hao.c/test_dwi_images/ACE12_ROI/seed_mask/lh_STS+STG.nii.gz -l --onewaycondition --omatrix2 --target2=/hpc/crise/hao.c/test_dwi_images/ACE12_ROI/target_mask/target_mask.nii.gz -c 0.2 -S 2000 --steplength=0.5 -P 5000 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --xfm=/hpc/crise/hao.c/test_dwi_images/ACE12_ROI/xfm_freesurfer/freesurfer2fa.mat --forcedir --opd -s /hpc/crise/hao.c/data/ACE12/raw_dwi.bedpostX/merged -m /hpc/crise/hao.c/data/ACE12/raw_dwi.bedpostX/nodif_brain_mask --dir=/hpc/crise/hao.c/test_dwi_images/ACE12_ROI/trackto/seed_lh_STSG_destrieux
+
+_________________________________________________________________________________________________________________________________________________
+
+### use freesurfer surface for probtrack: ###
+
+Label files from FreeSurfer are useful as cortical ROIs for tractography. In order to use a label file (or collection of labels) in probtrackx, you must first transform it (them) into a surface file, using the label2surf command. 
+
+1. convert an annotation file into multiple label files.
+
+by default is 'aparc' : get annotation from  $SUBJECTS_DIR/label/*h.aparc.annot 
+mri_annotation2label --subject AHS22 --hemi lh --outdir $outputdir/label_aparc/ (output will be lh.labelname.label)
+
+for aparc.a2009: 
+mri_annotation2label --subject AHS22 --hemi lh --annotation aparc.a2009s --outdir /hpc/crise/hao.c/data/AHS22/label/aparc.a2009s
+-----------------------------------------------------
+2. create surface mesh (Gifti) using label:
+
+#  create the list of label which you want to extract ( list of .label files )
+echo lh.bankssts.label lh.middletemporal.label h.superiortemporal.label lh.transversetemporal.label > $labeldir/LH_listOfBigstsstg.txt
+# for small seed 
+echo /hpc/crise/hao.c/data/AHS22/label/aparc.a2009s/lh.S_temporal_sup.label /hpc/crise/hao.c/data/AHS22/label/aparc.a2009s/lh.G_temp_sup-Lateral.label > AHS22/label/listOfSmallSTS+STG_LH.txt
+
+# create the suaface:
+mris_convert lh.white lh.white.gii
+
+fsl5.0-label2surf -s $Subdir/surface/lh.white.gii -o $Subdir/freesurfer_seg/lh.big_STS_STG.gii -l $subdir/label/LH_listOfBigstsstg.txt
+--------------------------------------------------------------
+3. create target mask
+(explaination in help: target2 mask is a lwer resolution binary brain mask)
+
+use freesurfer's parcellation/segmentation to create the target mask, ex: mri_convert aparc+aseg.mgz aparc+aseg.nii 
+We create the labeled brain mask where keep the label of target regions and set the rest(seed and useless region) at 0 
+
+(The aparc+aseg.mgz file shows the parcellated cortical ribbon at the same time as the segmented subcortical structures. The "colormap=lut" tells freeview to display the aparc+aseg.mgz file with colors according to the look up table. The aparc+aseg.mgz uses the Desikan-Killiany atlas. To see the Destrieux atlas, you would load fsaverage/mri/aparc.a2009s+aseg.mgz 
+--------------------------------------------------------------------
+4. probtrack
+
+try: use surfacic seed mask, volumique target mask(target2) and meshspace. 
+frioul_batch 'fsl5.0-probtrackx2 -x /hpc/crise/hao.c/data/AHS22/freesurfer_seg/lh_big_STSSTG.gii --meshspace=freesurfer --seedref=/hpc/crise/hao.c/data/AHS22/orig.nii.gz --onewaycondition --omatrix2 --target2=/hpc/crise/hao.c/data/AHS22/freesurfer_seg/lh_target_mask_destrieux_big_STS+STG.nii.gz -c 0.2 -S 2000 --steplength=0.5 -P 500 --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --xfm=/hpc/crise/hao.c/data/AHS22/freesurfer_regist/freesurfer2fa.mat --forcedir --opd -s /hpc/crise/hao.c/data/AHS22/raw_dwi.bedpostX/merged -m /hpc/crise/hao.c/data/AHS22/raw_dwi.bedpostX/nodif_brain_mask --dir=/hpc/crise/hao.c/data/AHS22/tracto/LH_big_STS+STG_surface_500'
+
+connmat = V_seed_vertices * M_target
+
 

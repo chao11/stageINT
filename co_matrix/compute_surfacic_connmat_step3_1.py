@@ -22,10 +22,10 @@ import commands
 #altas = 'destrieux'
 
 hemi = str(sys.argv[1])
-altas = str(sys.argv[2])
-
-#projection_method = '--projfrac-avg 0 1 0.1'
-projection_method = '--projfrac 0.5'
+tracto_name = str(sys.argv[2])
+seed_name = str(sys.argv[3])
+projection_method = '--projfrac-avg 0 1 0.1'
+#projection_method = '--projfrac 0.5'
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 subject_list = os.listdir(root_dir)
@@ -33,31 +33,32 @@ subject_list = os.listdir(root_dir)
 for subject in subject_list[0:1]:
 
     subject_path = op.join(root_dir,subject)
-    tracto_name = '{}_STS+STG_{}'.format(hemi.upper(), altas)
-    tracto_dir = op.join(subject_path, 'tracto', tracto_name)
+
+    tracto_dir = op.join(subject_path, tracto_name)
     surface_dir = op.join(root_dir, subject, 'surface')
     if not op.isdir(surface_dir):
         os.mkdir(surface_dir)
 
-    seegroi_nii_path = op.join(subject_path,'freesurfer_seg', '{}_STS+STG.nii.gz'.format(hemi))
-    seedroi_gii_path = op.join(subject_path,'freesurfer_seg', '{}_STS+STG.gii'.format(hemi))
+    seedroi_nii_path = op.join(subject_path,'freesurfer_seg', '{}_{}.nii.gz'.format(hemi, seed_name))
+    print seedroi_nii_path
+    seedroi_gii_path = op.join(subject_path,'freesurfer_seg', '{}_proj_{}.gii'.format(hemi, seed_name))
 
     coord_file_path = op.join(tracto_dir, 'coords_for_fdt_matrix2')
 
     connmat_path = op.join(tracto_dir,'conn_matrix_seed2parcels.jl')
-    connmat_proj_path = op.join(tracto_dir, 'surfacic_connectivity_profile_STSSTG_{}_proj05.jl'.format(hemi.lower()))
+    connmat_proj_path = op.join(tracto_dir, 'surfacic_connectivity_profile_STSSTG_{}_proj.jl'.format(hemi.lower()))
 
     if  not op.isfile(connmat_proj_path):
-        print('\ncompute subject :{}, {}, {}'.format(subject, hemi, altas))
+        print('\ncompute subject : '.format(tracto_dir))
         # ============== project the seed roi volume mask onto surface==========================================================
         if not op.isfile(seedroi_gii_path):
             print 'project the seed roi volume mask onto surface,'
-            proj_cmd = '%s/mri_vol2surf --src %s --o %s --out_type gii --regheader %s --hemi %s %s  ' % (fs_exec_dir, seegroi_nii_path, seedroi_gii_path, subject, hemi, projection_method )
+            proj_cmd = '%s/mri_vol2surf --src %s --o %s --out_type gii --regheader %s --hemi %s %s  ' % (fs_exec_dir, seedroi_nii_path, seedroi_gii_path, subject, hemi, projection_method )
             commands.getoutput(proj_cmd)
             print 'seed roi gifti file path : {}'.format(seedroi_gii_path)
 
         # ============== compute the surfacic connmat============================================================================
-        print 'compute surfacic connectivity matrix......'
+        print 'compute surfacic connectivity matrix......\n%s'%connmat_path
         with open(coord_file_path,'r') as f:
             file = f.read()
             text = file.split('\n')
@@ -75,7 +76,7 @@ for subject in subject_list[0:1]:
             #
                 seed_coord[i, 2] = data[2]
 
-        mat = jl.load(connmat_path)[0]
+        mat = jl.load(connmat_path)
         nii = np.zeros((256,256,256))
         n_target = mat.shape[1]
 
@@ -96,7 +97,7 @@ for subject in subject_list[0:1]:
                 c = seed_coord[j]
                 nii[c[0],c[1],c[2]] = valeur[j]
         #   save the nifti image
-            seed_nii = nib.load(seegroi_nii_path)
+            seed_nii = nib.load(seedroi_nii_path)
             img = nib.Nifti1Image(nii, seed_nii.get_affine())
             nii_output_path = op.join(surface_dir, '%03d.nii'%(t+1))
             img.to_filename(nii_output_path)

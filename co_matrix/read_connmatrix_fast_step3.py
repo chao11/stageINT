@@ -8,6 +8,10 @@ This script is uesd for one subject, instead of using numpy.loadtxt, read the co
 parameters:
     - hemisphere = lh/rh ,
     - tarcto_parcel: freesurfer parcellation for probtrackX (desterieux, aparcaseg, wmparc)
+
+use: target mask, fdt_matrix2.dot(zip), coords_for_fdt_matrix2 , tract_space_coords_for_fdt_matrix2
+
+output:  conn_matrix_seed2parcels.jl
 """
 import os
 import os.path as op
@@ -21,7 +25,7 @@ import zipfile
 
 hemisphere = 'lh'
 #subject = 'AHS22'
-seed = '{}_big_STS+STG.gii'.format(hemisphere.lower())
+#seed = '{}_big_STS+STG.gii'.format(hemisphere.lower())
 target = 'destrieux_big_STS+STG'
 
 """
@@ -32,14 +36,14 @@ target =  str(sys.argv[3])
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 
-tracto_name = 'tracto_surface/LH_big_STS+STG_destrieux_500'
+tracto_name = 'tracto_volume/LH_big_STS+STG_destrieux_500'
 #tracto_dir = '/hpc/crise/hao.c/data/AHS22/tracto_surface/LH_big_STS+STG_destrieux_500'
 
 for subject in subjects_list:
 
     subject_dir = op.join(root_dir, subject)
     fs_seg_dir = op.join(subject_dir, 'freesurfer_seg')
-    seed_path = op.join(fs_seg_dir, seed)
+    #seed_path = op.join(fs_seg_dir, seed)
 
     target_name = '{}_target_mask_{}.nii.gz'.format(hemisphere, target)
     target_path = op.join(fs_seg_dir, target_name)
@@ -123,6 +127,7 @@ for subject in subjects_list:
         n_target_parcels = labels.size
         print(n_target_parcels)
         conn_matrix_parcelated = np.zeros([n_seed_voxels,n_target_parcels])
+
         for label_ind, current_label in enumerate(labels):
             target_inds = np.where(target_labels==current_label)[0]
             conn_matrix_parcelated[:, label_ind] = c[:, target_inds].sum(1).squeeze()
