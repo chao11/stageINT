@@ -55,8 +55,9 @@ def target_center(target_path):
 
 hemisphere = str(sys.argv[1])
 parcel_alta = str(sys.argv[2])
-tarcto_name = str(sys.argv[3])
-target_base_name = str(sys.argv[4])
+target_base_name = str(sys.argv[3])
+tracto_name = str(sys.argv[4]) # tracto/.... or tracto_surface_
+
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
@@ -75,7 +76,7 @@ for subject in subjects_list:
 
         center_coords = target_center(target_path)
 
-        coord_file_path = op.join(root_dir, subject, 'tracto', '{}_STS+STG_{}'.format(hemisphere.upper(), tarcto_name),  'coords_for_fdt_matrix2')
+        coord_file_path = op.join(root_dir, subject, tracto_name,  'coords_for_fdt_matrix2')
         seed_coord = read_coord(coord_file_path)
 
         # calculate the distance between each voxel andthe center of the target
