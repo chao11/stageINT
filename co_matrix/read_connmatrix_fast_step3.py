@@ -98,6 +98,7 @@ for subject in subjects_list:
 
     #   matrice de connectivite de la forme seed voxels x target voxels,
         # number of rows and number of columns correspond to the last line of the matrix (last line in fdt-matrix.dot)
+        # coo_matrix (data, (i,j))), data[:]the entiers fo the matrix, i,j the row/column indices of the entries
         conn_matrix = sparse.coo_matrix((A[:,2],(A[:,0],A[:,1])),dtype=np.float32)
     #
         print(' full matrix loaded!!')
