@@ -86,7 +86,7 @@ for subject in subjects_list:
         for i in range(len(text)-1):
         #
             data = np.fromstring(text[i], dtype=int, sep=" ")
-        #
+        #   in python, index starts from 0
             A[i, 0] = data[0]-1
         #
             A[i, 1] = data[1]-1
@@ -96,7 +96,8 @@ for subject in subjects_list:
 
         #defining sparse matrix from A : connect is the connectivity matrix #seed X #targets
 
-    #   matrice de connectivite de la forme seed voxels x target voxels
+    #   matrice de connectivite de la forme seed voxels x target voxels,
+        # number of rows and number of columns correspond to the last line of the matrix (last line in fdt-matrix.dot)
         conn_matrix = sparse.coo_matrix((A[:,2],(A[:,0],A[:,1])),dtype=np.float32)
     #
         print(' full matrix loaded!!')
