@@ -132,18 +132,20 @@ def normaliser(x, option):
     return x_norma
 
 
-def norma_par_target(mat, target_file):
+def norma_par_target(x, target_label, target_file):
     print "target path:", target_file
-    target = nib.load(target_file).get_data()
-    label = np.unique(target)[1:]
+    target_mask = nib.load(target_file).get_data()
+
+    # target_label is bilateral or ipsilateral
+    # label = np.unique(target)[1:]
     target_size = []
-    for i in label:
-        size = len(target[target == i])
+    for i in target_label:
+        size = len(target_mask[target_mask == i])
         target_size.append(size)
 
     # divide each number in the matrix by the size of the target region
-    norma_mat = np.divide(mat, target_size)
-    return norma_mat
+    norma_x = np.divide(x, target_size)
+    return norma_x
 
 
 def remove_nan(x, y):
@@ -193,19 +195,20 @@ def lateral_model(lateral, hemi, target_path):
     if lateral == 'ipsi':
         print "use the connectivity of ipsilateral " + hemisphere
         # take one of the target mask
-        col, target_label = ipsi_model(hemisphere, target_path)
+        columns, target_label = ipsi_model(hemisphere, target_path)
     else:
         target_label = np.unique(nib.load(target_path).get_data())[1:]
-        col = range(0, len(target_label))
+        columns = range(0, len(target_label))
         print 'use the connectivity of bilateral'
 
-    return col, target_label
+    return columns, target_label
 
 
-def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral):
+def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, weight):
 
     target_path = op.join(root_dir, list[0], 'freesurfer_seg', target_name)
-    # for ipsilateral modeling:
+    # define lateral modeling:
+    col, target_label = lateral_model(lateral, hemisphere, target_path)
 
     loov = cross_validation.LeaveOneOut(len(list))
     print "loov:", len(loov)
@@ -232,7 +235,7 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral):
         X_test, Y_test = get_data(x_test_path, y_test_path, test_seed_coord)
 
       #   multiple by the distance weighted matrix
-        if multip_distance == 1:
+        if weight == 'distance' and model != 'distance':
             distance_mat_path = op.join(root_dir, subject_test[0], 'control_model_distance','{0}_distance_control_{1}.jl'.format(hemisphere, parcel_altas))
             distance_mat = joblib.load(distance_mat_path)
             X_test = X_test[:, col] * distance_mat[:, col]
@@ -246,7 +249,7 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral):
             X_test = X_test/nb_waytotal
 
         elif norma == 'partarget':
-            X_test = norma_par_target(X_test, target_file=op.join(root_dir, subject_test[0], 'freesurfer_seg', target_name))
+            X_test = norma_par_target(X_test, target_label, target_file=op.join(root_dir, subject_test[0], 'freesurfer_seg', target_name))
 
         else:
             X_test = normaliser(X_test, norma)
@@ -261,10 +264,18 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral):
             x_train_path = op.join(root_dir, subject, filename)
             y_train_path = op.join(fMRI_dir, subject,y_basedir )
 #
-            train_coord_path = op.join(root_dir, subject, tracto_dir,'coords_for_fdt_matrix2')
+            train_coord_path = op.join(root_dir, subject, tracto_dir, 'coords_for_fdt_matrix2')
             train_seed_coord = read_coord(train_coord_path)
 #
-            X, Y = get_data(x_train_path,y_train_path, train_seed_coord)
+            X, Y = get_data(x_train_path, y_train_path, train_seed_coord)
+
+#           multiple by the distance weighted matrix
+            if weight == 'distance' and model != 'distance':
+                distance_mat_path = op.join(root_dir, subject, 'control_model_distance','{0}_distance_control_{1}.jl'.format(hemisphere, parcel_altas))
+                distance_mat = joblib.load(distance_mat_path)
+                X = X[:, col] * distance_mat[:, col]
+            else:
+                X = X[:, col]
 
 #           normalize
             if norma == 'waytotal':
@@ -272,7 +283,7 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral):
                 X = X/get_waytotal(waytotal_file)
 
             elif norma == 'partarget':
-                X = norma_par_target(X, target_file=op.join(root_dir, subject, 'freesurfer_seg', target_name))
+                X = norma_par_target(X, target_label, target_file=op.join(root_dir, subject, 'freesurfer_seg', target_name))
             else:
                 X = normaliser(X, norma)
 
@@ -290,7 +301,6 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral):
             print "remove the seed voxel:", test_nan_id
             test_seed_coord = np.delete(test_seed_coord, test_nan_id, 0)
 
-
 #       LEARN MODEL
         coeff, predi, MAE[test_index] = learn_model(X_train, Y_train, X_test, Y_test)
         r2[test_index] = r2_score(Y_test, predi)
@@ -301,7 +311,7 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral):
         if not op.isdir(predict_subject):
             os.mkdir(predict_subject)
 
-        predict_output = op.join(predict_subject, '{}_{}_{}_{}_{}_predi_{}.jl'.format(hemisphere, lateral, model, norma, parcel_altas,  y_file))
+        predict_output = op.join(predict_subject, '{}Weighted_{}_{}_{}_{}_{}_predi_{}.jl'.format(weight, hemisphere, lateral, model, norma, parcel_altas,  y_file))
         joblib.dump([test_seed_coord, predi], predict_output, compress=3)
 
 #       save the predict map
@@ -311,7 +321,7 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral):
             predict_nii[c[0], c[1], c[2]] = predi[i]
 
         img = nib.Nifti1Image(predict_nii, nib.load(y_test_path).get_affine())
-        predict_output_path = op.join(predict_subject, '{}_{}_{}_{}_{}_predi_{}.nii.gz'.format(hemisphere, lateral, model, norma, parcel_altas, y_file))
+        predict_output_path = op.join(predict_subject, '{}Weighted_{}_{}_{}_{}_{}_predi_{}.nii.gz'.format(weight, hemisphere, lateral, model, norma, parcel_altas, y_file))
         img.to_filename(predict_output_path)
 
     print "mean MAE:", np.mean(MAE)
@@ -336,8 +346,8 @@ parcel_altas = str(sys.argv[2])
 model = str(sys.argv[3])
 y= str(sys.argv[4])
 lateral = str(sys.argv[5])
-
-multip_distance = 1
+weight = str(sys.argv[6])
+# weight = 'distance'
 # tracto_dir = str(sys.argv[6])
 #target_name = str(sys.argv[7])
 
@@ -351,7 +361,7 @@ fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 fMRI_dir = '/hpc/banco/voiceloc_full_database/func_voiceloc'
 
-output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/tracto_volume/%s_LOSO_R2score_compare_normalization_%s_%s.xlsx' %(tracto_name, lateral, model)
+output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/tracto_volume/%s_LOSO_R2score_compare_normalization_%s_%s_%s.xlsx' %(tracto_name, lateral, model, weight)
 
 tracto_dir = 'tracto/%s' % tracto_name
 
@@ -398,10 +408,10 @@ for norma in options:
     else:
         filename = op.join(tracto_dir, 'conn_matrix_seed2parcels.jl')
 
-    print "modeling %s altas: %s, \nY :%s, \nX:%s, norma:%s \n" %(hemisphere, parcel_altas, y, filename, str(norma))
+    print "modeling %s altas: %s, \nY :%s, \nX:%s, norma:%s, weighted: %s \n" %(hemisphere, parcel_altas, y, filename, norma, weight)
 
 #   modeling:
-    mae, R2, sub_list = loso_model(subjects_list, hemisphere, parcel_altas, model, y, norma, lateral)
+    mae, R2, sub_list = loso_model(subjects_list, hemisphere, parcel_altas, model, y, norma, lateral, weight)
     dict_R2 [norma] = pd.Series(R2, index=sub_list)
 
 #   mean score of this set of LOSO
@@ -429,5 +439,5 @@ result_dataframe.plot()
 plt.title('r2 %s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
 plt.ylabel('r2')
 plt.xlabel('subject')
-plt.savefig('/hpc/crise/hao.c/model_result/r2score_{}_{}_{}_{}_{}.png'.format(hemisphere, parcel_altas, lateral,model, y))
+plt.savefig('/hpc/crise/hao.c/model_result/r2score_{}_{}_{}_{}_{}_weighted{}.png'.format(hemisphere, parcel_altas, lateral,model, y, weight))
 
