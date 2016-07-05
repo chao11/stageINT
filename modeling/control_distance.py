@@ -34,13 +34,15 @@ def read_coord(coord_file_path):
 
     return seed_coord
 
+
 # calculate the center of mass of the targets
 def target_center(target_path):
+
     target = nib.load(target_path)
     target_img = target.get_data()
 
-    #determine the unique regions
-    labels = np.setdiff1d(np.unique(target_img.ravel()), [0])
+    # determine the unique regions
+    labels = np.unique(target_img)[1:]
     center_coords = []
     for label in labels:
         # calculate the center of mass
@@ -50,13 +52,13 @@ def target_center(target_path):
 
 # =================================== main =============================================================================
 
-#hemisphere = 'lh'
-#parcel_alta = 'destrieux'
+# hemisphere = 'lh'
+# parcel_alta = 'destrieux'
 
 hemisphere = str(sys.argv[1])
 parcel_alta = str(sys.argv[2])
 target_base_name = str(sys.argv[3])
-tracto_name = str(sys.argv[4]) # tracto/.... or tracto_surface_
+tracto_name = str(sys.argv[4])  # tracto/.... or tracto_surface_
 
 
 root_dir = '/hpc/crise/hao.c/data'
