@@ -19,7 +19,7 @@ import matplotlib.pylab as plt
 import commands
 from sklearn.metrics import r2_score
 import pandas as pd
-
+from openpyxl import  load_workbook
 
 def learn_model(x_train, y_train, x_test, y_test):
 
@@ -108,21 +108,42 @@ def get_data(x_path, y_path, seed_coord):
 
 def normaliser(x, option):
   # normalize by the norm
-    if option=='l2':
+    if option=='norm':
        # print 'normalize by the norm or the row'
         from sklearn.preprocessing import normalize
         x_norma = normalize(x,norm='l2')
 
 #   normalize by the sum of the row, ( normalized matrix sum to 1 )
-    elif option=='l1': # normalize sum to 1:
+    elif option=='sum': # normalize sum to 1:
         #print('normalize by the sum of the row')
         from sklearn.preprocessing import normalize
         x_norma = normalize(x,norm='l1')
+
+#   normalize each row by z-score : (x-mean)/std
+    elif option=='zscore':
+        from scipy import stats
+        x_norma = stats.zscore(x, axis=1)
+
     elif option=='none':
        # print ('no normalization')
         x_norma = x
 
     return x_norma
+
+
+def norma_par_target(mat, target_path):
+
+    target = nib.load(target_path).get_data()
+    label = np.unique(target)[1:]
+    target_size = []
+    for i in label:
+        size = len(target[target==i])
+        target_size.append(size)
+
+    # divide each number in the matrix by the size of the target region
+    norma_mat = np.divide(mat, target_size)
+
+    return norma_mat
 
 
 def remove_nan(x, y):
@@ -146,14 +167,7 @@ def get_waytotal(file_path):
     return waytotal
 
 
-def loso_model(hemisphere, parcel_altas, model, y_file, norma):
-
-    """
-    subjects_list = os.listdir(root_dir)
-    fMRI_dir = '/hpc/banco/voiceloc_full_database/func_voiceloc'
-    y_basedir = 'nomask_singletrialbetas_spm12_stats/resampled_fs5.3_space/{}.nii'.format(str(y_file))
-    tracto_dir = 'tracto/{}_STS+STG_{}/'.format(hemisphere.upper() ,parcel_altas)
-    """
+def loso_model(subjects_list, hemisphere, parcel_altas, model, y_file, norma):
     # check if the coordinate of the seed is correct
     """
     for subject in subjects_list:
@@ -166,20 +180,6 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
         seed = nib.load(seed_path)
         mask = seed.get_data()
         check_coords(coord,mask)
-    """
-    # set the number of target:
-    """
-    if parcel_altas == 'destrieux':
-    #
-        nb_target = 165  # 165 for new target mask
-    #
-    elif parcel_altas=='aparcaseg':
-    #
-        nb_target = 87
-    #
-    elif parcel_altas == 'wmparc':
-    #
-        nb_target = 155
     """
 
     # remove the subject which doesn't have rspmT
@@ -225,6 +225,10 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
             waytotal_file = op.join(root_dir, subject_test[0], tracto_dir, 'waytotal')
             nb_waytotal = get_waytotal(waytotal_file)
             X_test = X_test/nb_waytotal
+
+        elif norma =='partarget':
+            X_test = norma_par_target(X_test, target_path= op.join(root_dir, subject_test[0], 'freesurfer_seg', target_name))
+
         else:
             X_test = normaliser(X_test, norma)
 
@@ -247,6 +251,9 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
             if norma =='waytotal':
                 waytotal_file = op.join(root_dir, subject, tracto_dir, 'waytotal')
                 X = X/get_waytotal(waytotal_file)
+
+            elif norma =='partarget':
+                X = norma_par_target(X, target_path= op.join(root_dir, subject, 'freesurfer_seg', target_name))
             else:
                 X = normaliser(X, norma)
 
@@ -306,39 +313,58 @@ def loso_model(hemisphere, parcel_altas, model, y_file, norma):
     return MAE, r2, subjects_list
 
 
+def ipsi_model(hemisphere, target_path):
+
+    target_label = nib.load(target_path).get_data()[1:0]
+    if hemisphere == 'lh':
+        label = range(0,40)+ range(1001,1036)+ range(3001,3036) +range(11101, 11176) + range(13101, 13176) + [251, 252, 253, 254, 255]
+    else:
+        label = range(40,80)+ range(2001,2036)+ range(4001,4036) +range(12101, 12176) + range(14101, 14176) + [251, 252, 253, 254, 255]
+
+    target = []
+    columns = []
+
+    for index, i in enumerate(target_label):
+        if i in label:
+            target.append(i)
+            columns.append(index)
+    return columns
+
+
 # ==================== main============================================================
-
-#hemisphere = 'rh'
-#parcel_altas = 'destrieux'
-#model = 'connmat'
+"""
+hemisphere = 'lh'
+parcel_altas = 'destrieux'
+model = 'connmat'
 #y_file = ['rspmT_0001','rspmT_0002','rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004']
-
 #y_file = ['rspmT_0001','rcon_0001']
+#y = 'rspmT_0001'
 
+"""
 hemisphere = str(sys.argv[1])
 parcel_altas = str(sys.argv[2])
 model = str(sys.argv[3])
 y= str(sys.argv[4])
+# tracto_dir = str(sys.argv[4])
+tracto_dir = 'tracto/{}_STS+STG_{}_2/'.format(hemisphere.upper(),parcel_altas)
+ipsi = 1
 
 
-options = ['none', 'waytotal', 'l1', 'l2']
+options = ['none', 'waytotal', 'norm', 'sum', 'partarget']
 
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 
 root_dir = '/hpc/crise/hao.c/data'
-subjects_list = os.listdir(root_dir)
 fMRI_dir = '/hpc/banco/voiceloc_full_database/func_voiceloc'
-tracto_dir = 'tracto/{}_STS+STG_{}_2/'.format(hemisphere.upper(),parcel_altas)
 
+output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/LOSO_R2score_compare_normalization.xlsx'
+
+
+target_name = '{}_target_mask_{}_165.nii.gz'.format(hemisphere, parcel_altas)
+
+subjects_list = os.listdir(root_dir)
 dict_R2 = {}
 dlist = []
-
-# output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/LOSO_result_compare_normalization.xlsx'
-output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/LOSO_R2score_compare_normalization.xlsx'
-writer = pd.ExcelWriter(output_predict_score_excel_file, engine='openpyxl')
-
-#for y in y_file:
-
 
 for norma in options:
 
@@ -352,26 +378,41 @@ for norma in options:
 
     print "modeling %s altas: %s, \nY :%s, \nX:%s, norma:%s \n" %(hemisphere, parcel_altas, y, filename, str(norma))
 
+#   for ipsilateral modeling:
+    if ipsi==1:
+        target_path = op.join(root_dir, 'AHS22', 'freesurfer_seg', target_name)
+        col = ipsi_model(hemisphere, target_path)
 #   modeling:
-    mae, R2, sub_list= loso_model(hemisphere, parcel_altas, model, y, norma)
+    mae, R2, sub_list= loso_model(subjects_list, hemisphere, parcel_altas, model, y, norma)
     dict_R2 [norma]= pd.Series(R2, index=sub_list)
 
 #   mean score of this set of LOSO
     d = {'altas': parcel_altas, 'hemisphere': hemisphere, 'model':model, 'norma':norma,  'y_file' :y, 'mean_MAE': np.mean(mae), 'R2':np.mean(R2)}
     dlist.append(d)
 
+print dlist
+
 result_dataframe = pd.DataFrame(dict_R2)
+
+# load worksheet
+book = load_workbook(output_predict_score_excel_file)
+writer = pd.ExcelWriter(output_predict_score_excel_file, engine='openpyxl')
+writer.book = book
+writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+
 #   save the predict file to a new worksheet
 output_sheet_name = ('%s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
 result_dataframe.to_excel(writer, output_sheet_name)
+
 writer.save()
 
-"""
+
 result_dataframe.plot()
-plt.title('%s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
+plt.title('r2 %s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
+plt.ylabel('r2')
+plt.xlabel('subject')
 plt.savefig('/hpc/crise/hao.c/model_result/r2score_{}_{}_{}_{}.png'.format(hemisphere, parcel_altas, model, y))
-"""
-print dlist
+
 
 
 
