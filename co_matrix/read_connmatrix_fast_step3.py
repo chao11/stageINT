@@ -13,6 +13,7 @@ use: target mask, fdt_matrix2.dot(zip), coords_for_fdt_matrix2 , tract_space_coo
 
 output:  conn_matrix_seed2parcels.jl
 """
+
 import os
 import os.path as op
 import numpy as np
@@ -24,8 +25,8 @@ import sys
 import zipfile
 
 hemisphere = 'lh'
-#subject = 'AHS22'
-#seed = '{}_big_STS+STG.gii'.format(hemisphere.lower())
+# subject = 'AHS22'
+# seed = '{}_big_STS+STG.gii'.format(hemisphere.lower())
 target = 'destrieux_big_STS+STG'
 
 """
@@ -37,13 +38,13 @@ root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 
 tracto_name = 'tracto_volume/LH_big_STS+STG_destrieux_500'
-#tracto_dir = '/hpc/crise/hao.c/data/AHS22/tracto_surface/LH_big_STS+STG_destrieux_500'
+# tracto_dir = '/hpc/crise/hao.c/data/AHS22/tracto_surface/LH_big_STS+STG_destrieux_500'
 
 for subject in subjects_list:
 
     subject_dir = op.join(root_dir, subject)
     fs_seg_dir = op.join(subject_dir, 'freesurfer_seg')
-    #seed_path = op.join(fs_seg_dir, seed)
+    # seed_path = op.join(fs_seg_dir, seed)
 
     target_name = '{}_target_mask_{}.nii.gz'.format(hemisphere, target)
     target_path = op.join(fs_seg_dir, target_name)
@@ -55,34 +56,32 @@ for subject in subjects_list:
     if not op.isfile(fdt_fullmatrix_path):
         print "%s not exists" % fdt_fullmatrix_path
 
-
     elif op.isfile(output_path):
-        print " %s connectivity matrix exists"%subject
+        print " %s connectivity matrix exists" % subject
 
     else:
 
-       # load and compute cnnectivity matrix
+        # load and compute cnnectivity matrix
         print "load connectivity matrix %s:" % fdt_fullmatrix_path
         t2 = time.time()
 
-        #connectivity_matrix_file = open(fdt_fullmatrix_path)
+        # connectivity_matrix_file = open(fdt_fullmatrix_path)
         z = zipfile.ZipFile(fdt_fullmatrix_path)
         filename = z.namelist()[0]
-        f = z.open(filename,"r")
+        f = z.open(filename, "r")
 
-        #connectivity_matrix = z.read(filename)
+        # connectivity_matrix = z.read(filename)
 
         connectivity_matrix = f.read()
         text = connectivity_matrix.split('\n')
 
         z.close()
 
-        A = np.zeros((len(text),3))
+        A = np.zeros((len(text), 3))
     #
         print 'compute connectivity matrix...'
     #
-
-    # Convert the format : X Y #number_of_tracts (matrice A)  -->  matrix #voxel_seed times #voxel_targets (matrice connect)
+    #   Convert the format : X Y #number_of_tracts (matrice A)  -->  matrix #voxel_seed times #voxel_targets (matrice connect)
         for i in range(len(text)-1):
         #
             data = np.fromstring(text[i], dtype=int, sep=" ")
@@ -94,12 +93,12 @@ for subject in subjects_list:
             A[i, 2] = data[2]
         #
 
-        #defining sparse matrix from A : connect is the connectivity matrix #seed X #targets
+        # defining sparse matrix from A : connect is the connectivity matrix #seed X #targets
 
     #   matrice de connectivite de la forme seed voxels x target voxels,
         # number of rows and number of columns correspond to the last line of the matrix (last line in fdt-matrix.dot)
         # coo_matrix (data, (i,j))), data[:]the entiers fo the matrix, i,j the row/column indices of the entries
-        conn_matrix = sparse.coo_matrix((A[:,2],(A[:,0],A[:,1])),dtype=np.float32)
+        conn_matrix = sparse.coo_matrix((A[:, 2], (A[:, 0], A[:, 1])), dtype=np.float32)
     #
         print(' full matrix loaded!!')
 
@@ -118,27 +117,24 @@ for subject in subjects_list:
         n_target_voxels = target_coords.shape[0]
         print n_target_voxels
 
-        target_labels = np.zeros(n_target_voxels,dtype=np.int)
+        target_labels = np.zeros(n_target_voxels, dtype=np.int)
         for i in range(n_target_voxels):
-            target_labels[i] = target_data[target_coords[i, 0],target_coords[i, 1],target_coords[i,2 ]]
+            target_labels[i] = target_data[target_coords[i, 0], target_coords[i, 1], target_coords[i, 2]]
 
-
-    # convert to Compressed Sparse Column type, to perform fast artithmetics on columns
+        # convert to Compressed Sparse Column type, to perform fast artithmetics on columns
         c = conn_matrix.tocsc()
         labels = np.unique(target_labels)
         n_target_parcels = labels.size
         print(n_target_parcels)
-        conn_matrix_parcelated = np.zeros([n_seed_voxels,n_target_parcels])
+        conn_matrix_parcelated = np.zeros([n_seed_voxels, n_target_parcels])
 
         for label_ind, current_label in enumerate(labels):
-            target_inds = np.where(target_labels==current_label)[0]
+            target_inds = np.where(target_labels == current_label)[0]
             conn_matrix_parcelated[:, label_ind] = c[:, target_inds].sum(1).squeeze()
 
         print "shape of connectivity matrix:", conn_matrix_parcelated.shape
 
         # save matrix in disk
-        joblib.dump(conn_matrix_parcelated, output_path,compress=3)
+        joblib.dump(conn_matrix_parcelated, output_path, compress=3)
         print('{}: saved reduced connectivity matrix!!'.format(subject))
         print "time: %s" % str(time.time()-t2)
-
-
