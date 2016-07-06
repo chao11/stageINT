@@ -15,11 +15,14 @@ import os.path as op
 import numpy as np
 from sklearn import cross_validation, linear_model
 import sys
-import matplotlib.pylab as plt
 import commands
 from sklearn.metrics import r2_score
 import pandas as pd
 from openpyxl import load_workbook
+# to fix the TclError: no display name and no $DISPLAY environment variable, set 'Agg' before import matplotlib
+import matplotlib as mlp
+mlp.use('Agg')
+import matplotlib.pylab as plt
 
 
 def learn_model(x_train, y_train, x_test, y_test):
@@ -107,25 +110,25 @@ def get_data( x_path, y_path, seed_coord):
 
 def normaliser(x, option):
   # normalize by the norm
-    if option=='norm':
+    if option == 'norm':
        # print 'normalize by the norm or the row'
         from sklearn.preprocessing import normalize
         x_norma = normalize(x,norm='l2')
 
 #   normalize by the sum of the row, ( normalized matrix sum to 1 )
-    elif option=='sum': # normalize sum to 1:
+    elif option == 'sum': # normalize sum to 1:
         #print('normalize by the sum of the row')
         from sklearn.preprocessing import normalize
         x_norma = normalize(x,norm='l1')
 
 #   normalize each row by z-score : (x-mean)/std
-    elif option=='zscore':
+    elif option == 'zscore':
         from scipy import stats
         x_norma = stats.zscore(x, axis=1)
         # set the nan to 0
         x_norma[np.isnan(x_norma)]=0
 
-    elif option=='none':
+    elif option == 'none':
        # print ('no normalization')
         x_norma = x
 
@@ -133,7 +136,7 @@ def normaliser(x, option):
 
 
 def norma_par_target(x, target_label, target_file):
-    print "target path:", target_file
+    #print "target path:", target_file
     target_mask = nib.load(target_file).get_data()
 
     # target_label is bilateral or ipsilateral
@@ -184,6 +187,7 @@ def lateral_model(lateral, hemi, target_path):
 
         target = []
         columns = []
+        # get the targets for ipsilateral:
         for index, i in enumerate(target_label):
             if i in label:
                 target.append(i)
@@ -351,7 +355,7 @@ weight = str(sys.argv[6])
 # tracto_dir = str(sys.argv[6])
 #target_name = str(sys.argv[7])
 
-tracto_name = '{}_STS+STG_{}_2'.format(hemisphere.upper(),parcel_altas)
+tracto_name = '{}_STS+STG_{}_2'.format(hemisphere.upper(), parcel_altas)
 target_name = '{}_target_mask_{}_165.nii.gz'.format(hemisphere, parcel_altas)
 
 options = ['none', 'waytotal', 'norm', 'sum', 'partarget', 'zscore']
@@ -361,9 +365,9 @@ fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 fMRI_dir = '/hpc/banco/voiceloc_full_database/func_voiceloc'
 
-output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/tracto_volume/%s_LOSO_R2score_compare_normalization_%s_%s_%s.xlsx' %(tracto_name, lateral, model, weight)
+output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/tracto_volume/%s_LOSO_R2score_compare_normalization_%s_%s_weighted_%s.xlsx' %(tracto_name, lateral, model, weight)
 
-tracto_dir = 'tracto/%s' % tracto_name
+tracto_dir = 'tracto_volume/%s' % tracto_name
 
 
 subjects_list = os.listdir(root_dir)
@@ -399,7 +403,7 @@ print("length of the list: " + str(len(subjects_list)))
 # ============================= compare result of each normalization methode ===========================================
 dict_R2 = {}
 dlist = []
-
+n = 2
 for norma in options:
 
     if model == 'distance':
@@ -412,16 +416,34 @@ for norma in options:
 
 #   modeling:
     mae, R2, sub_list = loso_model(subjects_list, hemisphere, parcel_altas, model, y, norma, lateral, weight)
-    dict_R2 [norma] = pd.Series(R2, index=sub_list)
-
+    #dict_R2[norma] = pd.Series(R2, index=sub_list)
 #   mean score of this set of LOSO
     d = {'norma':norma,  'y_file' :y, 'mean_MAE': np.mean(mae), 'R2':np.mean(R2)}
     dlist.append(d)
 
+    result_dataframe = pd.DataFrame({norma:R2})
+    subID = pd.DataFrame({'subject':sub_list})
+    # ================================================ save score =========================================================
+    if op.isfile(output_predict_score_excel_file):
+        book = load_workbook(output_predict_score_excel_file)
+        writer = pd.ExcelWriter(output_predict_score_excel_file, engine='openpyxl')
+        writer.book = book
+        writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+    else:
+        writer = pd.ExcelWriter(output_predict_score_excel_file, engine='openpyxl')
+    #   save the predict file to a new worksheet
+    subID.to_excel(writer, y, startcol=0)
+    result_dataframe.to_excel(writer, y, startcol=n, index=False)   # save in a column, stars from the second column
+    writer.save()
+    print "save the r2 score in :", output_predict_score_excel_file
+
+    n += 1
+
 print dlist
 
+# save the score of all normalization
+"""
 result_dataframe = pd.DataFrame(dict_R2)
-
 # ================================================ save score =========================================================
 if op.isfile(output_predict_score_excel_file):
     book = load_workbook(output_predict_score_excel_file)
@@ -433,11 +455,12 @@ else:
 #   save the predict file to a new worksheet
 result_dataframe.to_excel(writer, y)
 writer.save()
-
+print "save the r2 score in :", output_predict_score_excel_file
+"""
 # ================================================ plot score =========================================================
 result_dataframe.plot()
 plt.title('r2 %s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
 plt.ylabel('r2')
 plt.xlabel('subject')
-plt.savefig('/hpc/crise/hao.c/model_result/r2score_{}_{}_{}_{}_{}_weighted{}.png'.format(hemisphere, parcel_altas, lateral,model, y, weight))
+plt.savefig('/hpc/crise/hao.c/model_result/tracto_volume/r2score_{}_{}_{}_{}_{}_weighted{}.png'.format(hemisphere, parcel_altas, lateral, model, y, weight))
 
