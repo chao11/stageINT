@@ -1,13 +1,26 @@
 #! /usr/bin/python -u
 # coding=utf-8
+"""
+
+frioul_batch -M "[['lh', 'rh'],['destrieux'] ,['connmat'],
+['rspmT_0001','rspmT_0002', 'rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004'], ['ipsi', 'bilateral'], ['distance', 'none']]"
+/hpc/crise/hao.c/python_scripts/modeling/LOSO_RL_loopsubject.py
+
+parameters: - hemisphere: lh/rh
+            - altas desxtrieux/ desikan/ wmparc/ wmparc2009
+            - model: connmat or distance control model
+            - Y: contrast/t-test
+            - lateral: ipsi or bilateral
+            - weighted: no weighted or distance
+            - tractodir
 
 # hao.c
-# 09/05/2016
+# 06/07/2016
 # To predict function from connectivity, we use a leave-one-subject-out cross validation routine.
-# We use a linear regressing to model the relationship between the fMRI contrast response and the connectivity matrix.
-# We predict the left-out subject by applying the coefficients to the connectivity matrix of the subject andcalculate the absolute erros
+# use a linear regressing to model the relationship between the fMRI contrast response and the connectivity matrix.
+# predict the left-out subject by applying the coefficients to the connectivity matrix of the subject andcalculate the absolute erros
 
-
+"""
 import nibabel as nib
 import joblib
 import os
@@ -84,16 +97,17 @@ def check_coords(seed_coord, mask):
         return incorrect
 
 
-# extract the functionnal response for each voxel correspondent ========================================================
-def extract_functional(coord, img_fmri):
-    y = []
-    for i in coord:
-        y.append(img_fmri[i[0], i[1], i[2]])
-    return y
 
 
 # get the connectivity matrix and the functional response ==============================================================
 def get_data( x_path, y_path, seed_coord):
+    # extract the functionnal response for each voxel correspondent ========================================================
+    def extract_functional(coord, img_fmri):
+        y = []
+        for i in coord:
+            y.append(img_fmri[i[0], i[1], i[2]])
+        return y
+
     connmat = joblib.load(x_path)
     if 'distance' in x_path:
         x = connmat
@@ -310,8 +324,8 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
         r2[test_index] = r2_score(Y_test, predi)
         print 'r2: ', r2[test_index]
 
-        # save the predict values
-        predict_subject = op.join(root_dir, subject_test[0], 'predict')
+        # save the predict values into the tractodir
+        predict_subject = op.join(root_dir, subject_test[0], tracto_dir, 'predict')
         if not op.isdir(predict_subject):
             os.mkdir(predict_subject)
 
@@ -337,12 +351,13 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
 
 # ==================== main============================================================
 """
-hemisphere = 'rh'
+hemisphere = 'lh'
 parcel_altas = 'destrieux'
 model = 'connmat'
 #y_file = ['rspmT_0001','rspmT_0002','rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004']
-y = 'rspmT_0002'
+y = 'rspmT_0001'
 lateral='ipsi' # or bilateral
+weight = 'none'
 
 """
 hemisphere = str(sys.argv[1])
@@ -351,7 +366,7 @@ model = str(sys.argv[3])
 y= str(sys.argv[4])
 lateral = str(sys.argv[5])
 weight = str(sys.argv[6])
-# weight = 'distance'
+
 # tracto_dir = str(sys.argv[6])
 #target_name = str(sys.argv[7])
 
@@ -416,7 +431,7 @@ for norma in options:
 
 #   modeling:
     mae, R2, sub_list = loso_model(subjects_list, hemisphere, parcel_altas, model, y, norma, lateral, weight)
-    #dict_R2[norma] = pd.Series(R2, index=sub_list)
+    dict_R2[norma] = pd.Series(R2, index=sub_list)
 #   mean score of this set of LOSO
     d = {'norma':norma,  'y_file' :y, 'mean_MAE': np.mean(mae), 'R2':np.mean(R2)}
     dlist.append(d)
@@ -442,23 +457,12 @@ for norma in options:
 print dlist
 
 # save the score of all normalization
-"""
-result_dataframe = pd.DataFrame(dict_R2)
-# ================================================ save score =========================================================
-if op.isfile(output_predict_score_excel_file):
-    book = load_workbook(output_predict_score_excel_file)
-    writer = pd.ExcelWriter(output_predict_score_excel_file, engine='openpyxl')
-    writer.book = book
-    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-else:
-    writer = pd.ExcelWriter(output_predict_score_excel_file, engine='openpyxl')
-#   save the predict file to a new worksheet
-result_dataframe.to_excel(writer, y)
-writer.save()
-print "save the r2 score in :", output_predict_score_excel_file
-"""
+
+ALL_result_dataframe = pd.DataFrame(dict_R2)
+joblib.dump(ALL_result_dataframe, '/hpc/crise/hao.c/model_result/tracto_volume/r2score_{}_{}_{}_{}_{}_weighted{}.jl'.format(hemisphere, parcel_altas, lateral, model, y, weight))
+
 # ================================================ plot score =========================================================
-result_dataframe.plot()
+ALL_result_dataframe.plot()
 plt.title('r2 %s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
 plt.ylabel('r2')
 plt.xlabel('subject')
