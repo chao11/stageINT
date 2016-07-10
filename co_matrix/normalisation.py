@@ -11,7 +11,7 @@ import numpy as np
 import os
 import os.path as op
 import matplotlib.pylab as plt
-
+import nibabel as nib
 
 def nomalisation(connect,norma, axis=1):
     # AXIS =1 by default
@@ -74,4 +74,6 @@ for option in options:
         output_path = op.join(tracto_dir,'conn_matrix_norma_{}.jl'.format(option))
         joblib.dump(matrix_norma,output_path,compress=3)
         print('{}: saved {} normalised connectivity matrix!!'.format(subject, option))
+
+
 

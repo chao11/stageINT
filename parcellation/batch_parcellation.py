@@ -19,16 +19,18 @@ import os.path as op
 import commands
 import sys
 
-"""
-hemisphere = str(sys.argv[1])
-nb_cluster = int(sys.argv[2])
+
+hemi = str(sys.argv[1])
+nb_clusters = int(sys.argv[2])
 altas = str(sys.argv[3])
+space = str(sys.argv[4])
+tracto_name = str(sys.argv[5])
 """
 
 hemi = 'lh'
 altas = 'destrieux'
-nb_clusters = 5
-
+nb_clusters =5
+"""""
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 
@@ -37,12 +39,12 @@ subjects_list = os.listdir(root_dir)
 for subject in subjects_list:
    # for nb_cluster in cluster:
 
-    surface_dir = op.join(root_dir, subject, 'surface')
-    output_gii_parcellation_path=op.join(surface_dir,'norma_{}.{}.parcellation_cl{}.gii'.format(hemi, altas, nb_clusters))
+   # surface_dir = op.join(root_dir, subject, 'surface')
+   # output_gii_parcellation_path=op.join(surface_dir,'norma_{}.{}.parcellation_cl{}.gii'.format(hemi, altas, nb_clusters))
 
-    if not op.isfile(output_gii_parcellation_path):
+   # if not op.isfile(output_gii_parcellation_path):
        # cmd ='frioul_batch -M "[[\'%s\'], [\'%s\'],[%s],[\'%s\'] ]" /hpc/crise/hao.c/python_scripts/parcellation/parcellation_surface.py  ' %( subject, hemisphere, str(nb_cluster), altas)
-        cmd = 'python /hpc/crise/hao.c/python_scripts/parcellation/parcellation_surface.py {} {} {} {} '.format(subject, hemi, nb_clusters, altas)
-        print cmd
+    cmd = 'python /hpc/crise/hao.c/python_scripts/parcellation/parcellation_surface.py {} {} {} {} '.format(subject, hemi, nb_clusters, altas, space, tracto_name)
+    print cmd
 
        # commands.getoutput(cmd)
