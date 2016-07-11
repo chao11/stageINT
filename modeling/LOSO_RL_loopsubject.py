@@ -20,6 +20,9 @@ parameters: - hemisphere: lh/rh
 # use a linear regressing to model the relationship between the fMRI contrast response and the connectivity matrix.
 # predict the left-out subject by applying the coefficients to the connectivity matrix of the subject andcalculate the absolute erros
 
+bug: error " raise InvalidFileException(unicode(e)) openpyxl.shared.exc.InvalidFileException: File is not a zip file "
+when opening multiple sheets at same time of an excel file.
+
 """
 import nibabel as nib
 import joblib
