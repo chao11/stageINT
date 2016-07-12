@@ -130,20 +130,20 @@ def normaliser(x, option):
     if option == 'norm':
        # print 'normalize by the norm or the row'
         from sklearn.preprocessing import normalize
-        x_norma = normalize(x,norm='l2')
+        x_norma = normalize(x, norm='l2')
 
 #   normalize by the sum of the row, ( normalized matrix sum to 1 )
     elif option == 'sum': # normalize sum to 1:
         #print('normalize by the sum of the row')
         from sklearn.preprocessing import normalize
-        x_norma = normalize(x,norm='l1')
+        x_norma = normalize(x, norm='l1')
 
 #   normalize each row by z-score : (x-mean)/std
     elif option == 'zscore':
         from scipy import stats
         x_norma = stats.zscore(x, axis=1)
         # set the nan to 0
-        x_norma[np.isnan(x_norma)]=0
+        x_norma[np.isnan(x_norma)] = 0
 
     elif option == 'none':
        # print ('no normalization')
@@ -231,10 +231,18 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
     # define lateral modeling:
     col, target_label = lateral_model(lateral, hemisphere, target_path)
 
+#   LEAVE ONE OUT MODEL
     loov = cross_validation.LeaveOneOut(len(list))
     print "loov:", len(loov)
 
-    MAE =np.zeros(len(loov))
+#   leave 20 percente label(subjects) out , select subjects randomly
+    import cross_validation_LabelShuffleSplite as cv
+    lpss = cv.LabelShuffleSplit(list, n_iter=50, test_size=0.2)
+    for train_index, test_index in lpss:
+        print ("train:,", train_index, "test:", test_index)
+        print [list[index] for index in test_index]
+
+    MAE = np.zeros(len(loov))
     r2 = np.zeros(len(loov))
     #
     # ===== splite subjects for LOOV=============
@@ -257,7 +265,8 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
 
       #   multiple by the distance weighted matrix
         if weight == 'distance' and model != 'distance':
-            distance_mat_path = op.join(root_dir, subject_test[0], 'control_model_distance','{0}_distance_control_{1}.jl'.format(hemisphere, parcel_altas))
+            distance_mat_path = op.join(root_dir, subject_test[0], 'control_model_distance', '{0}_distance_control_{1}.jl'
+                                        .format(hemisphere, parcel_altas))
             distance_mat = joblib.load(distance_mat_path)
             X_test = X_test[:, col] * distance_mat[:, col]
         else:
@@ -292,7 +301,8 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
 
 #           multiple by the distance weighted matrix
             if weight == 'distance' and model != 'distance':
-                distance_mat_path = op.join(root_dir, subject, 'control_model_distance','{0}_distance_control_{1}.jl'.format(hemisphere, parcel_altas))
+                distance_mat_path = op.join(root_dir, subject, 'control_model_distance','{0}_distance_control_{1}.jl'
+                                            .format(hemisphere, parcel_altas))
                 distance_mat = joblib.load(distance_mat_path)
                 X = X[:, col] * distance_mat[:, col]
             else:
@@ -328,22 +338,32 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
         print 'r2: ', r2[test_index]
 
         # save the predict values into the tractodir
-        predict_subject = op.join(root_dir, subject_test[0], tracto_dir, 'predict')
+        predict_subject = op.join(root_dir, subject_test[0], tracto_dir, 'predict', lateral)
         if not op.isdir(predict_subject):
             os.mkdir(predict_subject)
 
-        predict_output = op.join(predict_subject, '{}Weighted_{}_{}_{}_{}_{}_predi_{}.jl'.format(weight, hemisphere, lateral, model, norma, parcel_altas,  y_file))
-        joblib.dump([test_seed_coord, predi], predict_output, compress=3)
+        predict_output = op.join(predict_subject, '{}Weighted_{}_{}_{}_{}_{}_predi_{}.jl'
+                                 .format(weight, hemisphere, lateral, model, norma, parcel_altas,  y_file))
+#        joblib.dump([test_seed_coord, coeff, predi], predict_output, compress=3)
 
 #       save the predict map
-        predict_nii = np.zeros((256,256,256))
+        predict_nii = np.zeros((256, 256, 256))
         for i in range(len(test_seed_coord)):
             c = test_seed_coord[i]
             predict_nii[c[0], c[1], c[2]] = predi[i]
 
-        img = nib.Nifti1Image(predict_nii, nib.load(y_test_path).get_affine())
-        predict_output_path = op.join(predict_subject, '{}Weighted_{}_{}_{}_{}_{}_predi_{}.nii.gz'.format(weight, hemisphere, lateral, model, norma, parcel_altas, y_file))
-        img.to_filename(predict_output_path)
+#        img = nib.Nifti1Image(predict_nii, nib.load(y_test_path).get_affine())
+#        predict_output_path = op.join(predict_subject, '{}Weighted_{}_{}_{}_{}_{}_predi_{}.nii.gz'.format(weight, hemisphere, lateral, model, norma, parcel_altas, y_file))
+#        img.to_filename(predict_output_path)
+
+#       plot les valeurs et R2 score:
+        plt.plot(predi, Y_test, '.')
+        plt.xlabel('predict')
+        plt.ylabel('actual response')
+        plt.title('norma: ' + norma + ' correlation: R2 = ' + str(r2[test_index]))
+        plt.show()
+        plt.savefig(op.join(predict_subject, '{}Weighted_{}_{}_{}_{}_{}_predi_{}.png'.format(weight, hemisphere, lateral,
+                                                                        model, norma, parcel_altas,  y_file)))
 
     print "mean MAE:", np.mean(MAE)
 
@@ -353,13 +373,13 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
 
 
 # ==================== main============================================================
-"""
-hemisphere = 'lh'
+
+hemisphere = 'rh'
 parcel_altas = 'destrieux'
 model = 'connmat'
 #y_file = ['rspmT_0001','rspmT_0002','rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004']
-y = 'rspmT_0001'
-lateral='ipsi' # or bilateral
+y = 'rcon_0001'
+lateral='bilateral' # or bilateral
 weight = 'none'
 
 """
@@ -369,7 +389,7 @@ model = str(sys.argv[3])
 y= str(sys.argv[4])
 lateral = str(sys.argv[5])
 weight = str(sys.argv[6])
-
+"""
 # tracto_dir = str(sys.argv[6])
 #target_name = str(sys.argv[7])
 
@@ -383,7 +403,7 @@ fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 fMRI_dir = '/hpc/banco/voiceloc_full_database/func_voiceloc'
 
-output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/tracto_volume/%s_LOSO_R2score_compare_normalization_%s_%s_weighted_%s.xlsx' %(tracto_name, lateral, model, weight)
+output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/tracto_volume/test_%s_LOSO_R2score_compare_normalization_%s_%s_weighted_%s.xlsx' %(tracto_name, lateral, model, weight)
 
 tracto_dir = 'tracto_volume/%s' % tracto_name
 
@@ -441,6 +461,7 @@ for norma in options:
 
     result_dataframe = pd.DataFrame({norma:R2})
     subID = pd.DataFrame({'subject':sub_list})
+
     # ================================================ save score =========================================================
     if op.isfile(output_predict_score_excel_file):
         book = load_workbook(output_predict_score_excel_file)
@@ -466,8 +487,11 @@ joblib.dump(ALL_result_dataframe, '/hpc/crise/hao.c/model_result/tracto_volume/r
 
 # ================================================ plot score =========================================================
 ALL_result_dataframe.plot()
-plt.title('r2 %s_%s_%s_%s' %(hemisphere, parcel_altas, model, y))
+plt.title('r2 %s_%s_%s_%s_%s_%s' %(hemisphere, parcel_altas, model, lateral,  weight, y))
 plt.ylabel('r2')
 plt.xlabel('subject')
-plt.savefig('/hpc/crise/hao.c/model_result/tracto_volume/r2score_{}_{}_{}_{}_{}_weighted{}.png'.format(hemisphere, parcel_altas, lateral, model, y, weight))
+plt.text(50,-1, 'mean of R2 score: \n ' + str(ALL_result_dataframe.mean(axis=0)))
+
+plt.savefig('/hpc/crise/hao.c/model_result/tracto_volume/test_r2score_{}_{}_{}_{}_{}_weighted{}.png'.format(hemisphere, parcel_altas, lateral, model, y, weight))
+
 
