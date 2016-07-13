@@ -19,11 +19,9 @@ parameters: - hemisphere: lh/rh
 # To predict function from connectivity, we use a leave-one-subject-out cross validation routine.
 # use a linear regressing to model the relationship between the fMRI contrast response and the connectivity matrix.
 # predict the left-out subject by applying the coefficients to the connectivity matrix of the subject andcalculate the absolute erros
-
-bug: error " raise InvalidFileException(unicode(e)) openpyxl.shared.exc.InvalidFileException: File is not a zip file "
-when opening multiple sheets at same time of an excel file.
-
 """
+# TODO: error: " raise InvalidFileException(unicode(e)) openpyxl.shared.exc. when opening multiple sheets at same time of an excel file.
+
 import nibabel as nib
 import joblib
 import os
@@ -227,6 +225,13 @@ def lateral_model(lateral, hemi, target_path):
 
 def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, weight):
 
+    if model == 'distance':
+        filename = op.join('control_model_distance','{0}_distance_control_{1}.jl'.format(hemisphere, parcel_altas))
+    else:
+        filename = op.join(tracto_dir, 'conn_matrix_seed2parcels.jl')
+
+    print "modeling %s altas: %s, \nY :%s, \nX:%s, norma:%s, weighted: %s \n" %(hemisphere, parcel_altas, y, filename, norma, weight)
+
     target_path = op.join(root_dir, list[0], 'freesurfer_seg', target_name)
     # define lateral modeling:
     col, target_label = lateral_model(lateral, hemisphere, target_path)
@@ -344,7 +349,7 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
 
         predict_output = op.join(predict_subject, '{}Weighted_{}_{}_{}_{}_{}_predi_{}.jl'
                                  .format(weight, hemisphere, lateral, model, norma, parcel_altas,  y_file))
-#        joblib.dump([test_seed_coord, coeff, predi], predict_output, compress=3)
+        joblib.dump([test_seed_coord, coeff, predi], predict_output, compress=3)
 
 #       save the predict map
         predict_nii = np.zeros((256, 256, 256))
@@ -352,9 +357,10 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
             c = test_seed_coord[i]
             predict_nii[c[0], c[1], c[2]] = predi[i]
 
-#        img = nib.Nifti1Image(predict_nii, nib.load(y_test_path).get_affine())
-#        predict_output_path = op.join(predict_subject, '{}Weighted_{}_{}_{}_{}_{}_predi_{}.nii.gz'.format(weight, hemisphere, lateral, model, norma, parcel_altas, y_file))
-#        img.to_filename(predict_output_path)
+        img = nib.Nifti1Image(predict_nii, nib.load(y_test_path).get_affine())
+        predict_output_path = op.join(predict_subject, '{}Weighted_{}_{}_{}_{}_{}_predi_{}.nii.gz'
+                                      .format(weight, hemisphere, lateral, model, norma, parcel_altas, y_file))
+        img.to_filename(predict_output_path)
 
 #       plot les valeurs et R2 score:
         plt.plot(predi, Y_test, '.')
@@ -374,12 +380,12 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
 
 # ==================== main============================================================
 
-hemisphere = 'rh'
+hemisphere = 'lh'
 parcel_altas = 'destrieux'
 model = 'connmat'
 #y_file = ['rspmT_0001','rspmT_0002','rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004']
-y = 'rcon_0001'
-lateral='bilateral' # or bilateral
+y = 'rcon_0002'
+lateral='ipsi' # or bilateral
 weight = 'none'
 
 """
@@ -444,19 +450,11 @@ dlist = []
 n = 2
 for norma in options:
 
-    if model == 'distance':
-        filename = op.join('control_model_distance','{0}_distance_control_{1}.jl'.format(hemisphere, parcel_altas))
-
-    else:
-        filename = op.join(tracto_dir, 'conn_matrix_seed2parcels.jl')
-
-    print "modeling %s altas: %s, \nY :%s, \nX:%s, norma:%s, weighted: %s \n" %(hemisphere, parcel_altas, y, filename, norma, weight)
-
 #   modeling:
     mae, R2, sub_list = loso_model(subjects_list, hemisphere, parcel_altas, model, y, norma, lateral, weight)
     dict_R2[norma] = pd.Series(R2, index=sub_list)
 #   mean score of this set of LOSO
-    d = {'norma':norma,  'y_file' :y, 'mean_MAE': np.mean(mae), 'R2':np.mean(R2)}
+    d = {'norma': norma,  'y_file': y, 'mean_MAE': np.mean(mae), 'R2': np.mean(R2)}
     dlist.append(d)
 
     result_dataframe = pd.DataFrame({norma:R2})
@@ -481,17 +479,7 @@ for norma in options:
 print dlist
 
 # save the score of all normalization
-
 ALL_result_dataframe = pd.DataFrame(dict_R2)
 joblib.dump(ALL_result_dataframe, '/hpc/crise/hao.c/model_result/tracto_volume/r2score_{}_{}_{}_{}_{}_weighted{}.jl'.format(hemisphere, parcel_altas, lateral, model, y, weight))
-
-# ================================================ plot score =========================================================
-ALL_result_dataframe.plot()
-plt.title('r2 %s_%s_%s_%s_%s_%s' %(hemisphere, parcel_altas, model, lateral,  weight, y))
-plt.ylabel('r2')
-plt.xlabel('subject')
-plt.text(50,-1, 'mean of R2 score: \n ' + str(ALL_result_dataframe.mean(axis=0)))
-
-plt.savefig('/hpc/crise/hao.c/model_result/tracto_volume/test_r2score_{}_{}_{}_{}_{}_weighted{}.png'.format(hemisphere, parcel_altas, lateral, model, y, weight))
 
 
