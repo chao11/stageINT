@@ -9,11 +9,29 @@
 # Attention: NAN values found in betas : voxel indice in ACE12 : [10640,10641,10743],
 # use _All_subj_XYdata_removeNAN.jl
 
+"""
+Leace p percent of subject out
 
+
+"""
+import nibabel as nib
 import joblib
+import os
+import os.path as op
 import numpy as np
 from sklearn import cross_validation, linear_model
-import os .path as op
+import cross_validation_LabelShuffleSplite as cv
+import sys
+import commands
+from sklearn.metrics import r2_score
+import pandas as pd
+from openpyxl import load_workbook
+# to fix the TclError: no display name and no $DISPLAY environment variable, set 'Agg' before import matplotlib
+import matplotlib as mlp
+mlp.use('Agg')
+import matplotlib.pylab as plt
+
+
 
 def normaliser(x, option):
     if option == 'l2':
@@ -62,6 +80,8 @@ def transform_beta2con(beta, contrast):
 
     return con
 
+
+
 #
 # ============================ main ====================================================================================
 #
@@ -85,20 +105,31 @@ con = transform_beta2con(beta, contrast=1)
 
 subjects_list = np.unique(subject)
 loso = cross_validation.LeaveOneOut(len(subjects_list))
-MAE =np.zeros(len(loso))
-index = np.arange(0,len(subject), 1)
+
+lpss = cv.LabelShuffleSplit(subjects_list, n_iter=50, test_size=0.2)
+for train_index, test_index in lpss:
+    print ("train:,", train_index, "test:", test_index)
+    print [list[index] for index in test_index]
+
+MAE = np.zeros(len(lpss))
+index = np.arange(0, len(subject), 1)
 
 # ===== split subjects for LOSO (Leave One Subject Out)=============
 for train_index, test_index in loso:
     # print ("Train:",train_index,"Test:",test_index)
     print "loov: " + str(test_index)
-    subject_test= [subjects_list[index] for index in test_index]
-    subject_train= [subjects_list[index] for index in train_index]
+    subject_test = [subjects_list[index] for index in test_index]
+    subject_train = [subjects_list[index] for index in train_index]
 
 #   base de test:
-    print "sujet test: ", subject_test[0]
-    id_test = np.where(subject == subject_test[0])[0]
-    X_test = X[id_test,:]
+    print "sujet test: ", subject_test
+    id_test = {}
+    for s in subject_test:
+        print s
+        id_test[s] = (np.where(subject == s)[0])
+
+
+    X_test = X[id_test, :]
     Y_test = con[id_test]
 
 #   base d'apprentissage:
