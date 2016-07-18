@@ -239,14 +239,14 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
 #   LEAVE ONE OUT MODEL
     loov = cross_validation.LeaveOneOut(len(list))
     print "loov:", len(loov)
-
+    """
 #   leave 20 percente label(subjects) out , select subjects randomly
     import cross_validation_LabelShuffleSplite as cv
     lpss = cv.LabelShuffleSplit(list, n_iter=50, test_size=0.2)
     for train_index, test_index in lpss:
         print ("train:,", train_index, "test:", test_index)
         print [list[index] for index in test_index]
-
+    """
     MAE = np.zeros(len(loov))
     r2 = np.zeros(len(loov))
     #
@@ -379,7 +379,7 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
 
 
 # ==================== main============================================================
-
+"""
 hemisphere = 'lh'
 parcel_altas = 'destrieux'
 model = 'connmat'
@@ -395,7 +395,7 @@ model = str(sys.argv[3])
 y= str(sys.argv[4])
 lateral = str(sys.argv[5])
 weight = str(sys.argv[6])
-"""
+
 # tracto_dir = str(sys.argv[6])
 #target_name = str(sys.argv[7])
 
@@ -409,7 +409,8 @@ fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 root_dir = '/hpc/crise/hao.c/data'
 fMRI_dir = '/hpc/banco/voiceloc_full_database/func_voiceloc'
 
-output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/tracto_volume/test_%s_LOSO_R2score_compare_normalization_%s_%s_weighted_%s.xlsx' %(tracto_name, lateral, model, weight)
+# TODO: check: save as .xls file because the current version of xlrd can't read xlsx.
+output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/tracto_volume/%s_LOSO_R2score_compare_normalization_%s_%s_weighted_%s.xls' %(tracto_name, lateral, model, weight)
 
 tracto_dir = 'tracto_volume/%s' % tracto_name
 
