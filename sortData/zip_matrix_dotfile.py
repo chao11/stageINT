@@ -6,10 +6,9 @@ import commands
 import sys
 import os.path as op
 
+# tracto_name = str(sys.argv[1])
+tracto_name = 'tracto_volume/RH_small_STS+STG_desikan_WM_5000'
 
-#tracto_name = 'tracto_surface/LH_small_STS+STG_destrieux_5000'
-
-tracto_name = str(sys.argv[1])
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)

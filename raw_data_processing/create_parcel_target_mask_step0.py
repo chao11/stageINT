@@ -69,44 +69,45 @@ def mask_gm(seed_path, target_altas, output):
 # create target mask with white matter parcellation.
 # The white matter parcellation is derived from the cortical parcellation.
 # We calculate the intersection of seed region defined from wmparc2009 and the wmparc
-def mask_wm( seed_label , wmparc1, wmparc2):
+def mask_wm(seed_label, w1, w2):
     print "create target mask by using %s  "%altas
 
-    wm1_name = '%s_target_mask_%s_%s.nii.gz' %(hemi, wmparc1, seed_name)
-    wm2_name = '%s_target_mask_%s_%s.nii.gz' %(hemi, wmparc2, seed_name)
+    wm1_name = '%s_target_mask_%s_%s_2.nii.gz' % (hemi, w1, seed_name)
+    wm2_name = '%s_target_mask_%s_%s_2.nii.gz' % (hemi, w2, seed_name)
     out_put_wmmask1_path = op.join(mask_dir, wm1_name)
     out_put_wmmask2_path = op.join(mask_dir, wm2_name)
 
-    wmparc_path = op.join(fs_parcel_dir, '%s.nii' %wmparc1)
+    wmparc_path = op.join(fs_parcel_dir, '%s.nii' % w1)
     wmparc_nii = nibabel.load(wmparc_path)
     wmparc1 = wmparc_nii.get_data()
 
-    wmparc2_path = op.join(fs_parcel_dir, '%s.nii' %wmparc2)
+    wmparc2_path = op.join(fs_parcel_dir, '%s.nii' % w2)
     wmparc2 = nibabel.load(wmparc2_path).get_data()
 
     wmlabel = (np.asarray(seed_label)+2000).tolist()
-    label = seed_label + wmlabel
+    label = wmlabel
     print(label)
     for i in label:
         indice_wm = np.where(wmparc1 == i)
-        wmparc1[indice_wm] =0
+        wmparc1[indice_wm] = 0
         wmparc2[indice_wm] = 0
 
     # remove unusable labels:
-    remove_label = [0,2,4,5,7,8,14,15,16,24,28,30,31,41,43,44,46,47,60,62,63,72,77,80,85,1000, 2000, 3000,4000,5001,5002]
+    remove_label = [0,2,4,5,7,8,14,15,16,24,28,30,31,41,43,44,46,47,60,62,63,72,77,80,85, 3000,4000,5001,5002]
+    ctx_wmparc = range(1000, 1036) + range(2000,2036) + range(11100, 11176) + range(12100, 12176)
+    remove_label = remove_label + ctx_wmparc
+
     for i in remove_label:
         wmparc1[wmparc1 == i] = 0
         wmparc2[wmparc2 == i] = 0
 
     # save target mask
-    print 'wmparc targets ' + str(len(np.unique(wmparc1)))
-    #print np.unique(wmparc)
+    print '%s targets: ' % w1 + str(len(np.unique(wmparc1))-1)
     img = nibabel.Nifti1Image(wmparc1, wmparc_nii.get_affine())
     img.to_filename( out_put_wmmask1_path)
-    print'save target mask: %s' %out_put_wmmask1_path
+    print'save target mask: %s' % out_put_wmmask1_path
 
-    print 'wmparc targets ' + str(len(np.unique(wmparc2)))
-    #print np.unique(wmparc)
+    print '%s targets: ' % w2 + str(len(np.unique(wmparc2))-1)
     img = nibabel.Nifti1Image(wmparc2, wmparc_nii.get_affine())
     img.to_filename( out_put_wmmask2_path)
     print'save target mask: %s' %out_put_wmmask2_path
@@ -119,25 +120,25 @@ def mask_wm( seed_label , wmparc1, wmparc2):
 hemi = 'rh'
 #hemi = str(sys.argv[1])
 #altas = str(sys.argv[2]) # aparc/desikan ou aparc2009/destrieux
-altas = 'desikan'
+altas = 'destrieux'
 
-seed_name = 'big_STS+STG'
+seed_name = 'small_STS+STG'
 
-target_name = '%s_target_mask_%s_%s.nii.gz' %(hemi, altas, seed_name)
+gm_target_name = '%s_target_mask_%s_%s.nii.gz' %(hemi, altas, seed_name)
 
 root_dir = '/hpc/crise/hao.c/data'
 subject_list = os.listdir(root_dir)
 
 
-if seed_name=='small_STS+STG':
+if seed_name == 'small_STS+STG':
     seed_altas = 'destrieux'
     seed_label = [11134,11174]
 
-elif seed_name=='big_STS+STG':
-    seed_altas  ='desikan'
+elif seed_name == 'big_STS+STG':
+    seed_altas = 'desikan'
     seed_label = [1001, 1015, 1030, 1034]
 
-if hemi=='rh':
+if hemi == 'rh':
     seed_label = (np.asarray(seed_label) + 1000).tolist()
 print seed_label
 
@@ -148,10 +149,10 @@ for i in subject_list:
     seed_path = op.join(mask_dir, '%s_%s.nii.gz'%(hemi, seed_name))
 #   create seed mask:
     if not op.isfile(seed_path):
-        mask_seed(hemi, seed_altas,  seed_label, seed_name)
+         mask_seed(hemi, seed_altas,  seed_label, seed_name)
 
 #   create gray matter parcellation target mask:
-    mask_gm(seed_path, altas, target_name)
+    # mask_gm(seed_path, altas, gm_target_name)
 
 #   create white matter parcellation target mask: wmparc and wmparc2009
     if seed_altas =='desikan':
@@ -167,7 +168,7 @@ for i in subject_list:
 
 print 'done! '
 
-
+"""
 # ================================= check mask===========================================================================
 # this is only used to check if the number of targets in the mask are the same  for all the subject
 n_normal = 165
@@ -189,3 +190,4 @@ for i in subject_list:
         img.to_filename( mask)
         print'save target mask: %s' %mask
 
+"""

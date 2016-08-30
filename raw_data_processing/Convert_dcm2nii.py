@@ -5,7 +5,6 @@ import commands
 import sujet_profiles as sp
 
 
-
 # create directory for the subject in the workspace
 def checkDir(path):
     # os.listdir(path)
@@ -23,9 +22,7 @@ def checkDir(path):
     return complete
 
 
-
-
-def movefiles(source_path,dir_path):
+def movefiles(source_path, dir_path):
     os.chdir(source_path)
     cmd_mvfiles = 'mv *.nii.gz *.bvec *.bval {}'.format(dir_path)
     print (cmd_mvfiles)
@@ -43,7 +40,7 @@ def dcm2nii(source,workspace):
     return
 
 
-def convert(subjectCode,DTIcode):
+def convert(subjectCode, DTIcode):
     subject = sp.Subject(subjectCode)
 #    print subject.anat_source, subject.anat_workspace
     # check if the datas are already converted, if not, convert the data and move to the workspace
@@ -52,7 +49,7 @@ def convert(subjectCode,DTIcode):
     if op.exists(subject.anat_source):
         complete = checkDir(subject.anat_workspace)
 
-        if complete==0:
+        if complete == 0:
            dcm2nii(subject.anat_source,subject.anat_workspace)
            print(os.listdir(subject.anat_workspace))
 
@@ -63,10 +60,10 @@ def convert(subjectCode,DTIcode):
     if op.exists(subject.dwi_source):
         complete = checkDir(subject.dwi_workspace)
 
-        if complete==0:
-            dcm2nii(subject.dwi_source,subject.dwi_workspace)
+        if complete == 0:
+            dcm2nii(subject.dwi_source, subject.dwi_workspace)
             print(os.listdir(subject.dwi_workspace))
     else:
-        print( "not exist: "+subject.dwi_source)
+        print("not exist: "+subject.dwi_source)
 
     return

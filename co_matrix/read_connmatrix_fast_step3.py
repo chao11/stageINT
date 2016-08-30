@@ -23,21 +23,21 @@ import joblib
 import time
 import sys
 import zipfile
-
-hemisphere = 'lh'
-# subject = 'AHS22'
-# seed = '{}_big_STS+STG.gii'.format(hemisphere.lower())
-target = 'destrieux_big_STS+STG'
-
 """
+hemisphere = 'lh'
+tracto_parcel = 'wmparc_2'
+target = 'wmparc_small_STS+STG'
+"""
+
 hemisphere = str(sys.argv[1])
 tracto_parcel = str(sys.argv[2])
-target =  str(sys.argv[3])
-"""
+target = str(sys.argv[3])
+
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
+#
 
-tracto_name = 'tracto_surface/LH_small_STS+STG_destrieux_5000'
+tracto_name = 'tracto_volume/%s_small_STS+STG_%s' % (hemisphere.upper(), tracto_parcel)
 # tracto_dir = '/hpc/crise/hao.c/data/AHS22/tracto_surface/LH_big_STS+STG_destrieux_500'
 
 for subject in subjects_list:
@@ -61,6 +61,23 @@ for subject in subjects_list:
 
     else:
 
+        # load target file
+        target_nii = nib.load(target_path)
+        target_data = target_nii.get_data()
+
+        # load seed, target coordinates
+        seed_coords_path = op.join(tracto_dir, 'coords_for_fdt_matrix2')
+        seed_coords = np.loadtxt(seed_coords_path).astype(np.int)
+        n_seed_voxels = seed_coords.shape[0]
+
+        target_coords_path = op.join(tracto_dir, 'tract_space_coords_for_fdt_matrix2')
+        target_coords = np.loadtxt(target_coords_path).astype(np.int)
+        n_target_voxels = target_coords.shape[0]
+
+        target_labels = np.zeros(n_target_voxels, dtype=np.int)
+        for i in range(n_target_voxels):
+            target_labels[i] = target_data[target_coords[i, 0], target_coords[i, 1], target_coords[i, 2]]
+
         # load and compute cnnectivity matrix
         print "load connectivity matrix %s:" % fdt_fullmatrix_path
         t2 = time.time()
@@ -81,7 +98,8 @@ for subject in subjects_list:
     #
         print 'compute connectivity matrix...'
     #
-    #   Convert the format : X Y #number_of_tracts (matrice A)  -->  matrix #voxel_seed times #voxel_targets (matrice connect)
+    #   Convert the format : X Y #number_of_tracts (matrice A)  -->
+        # matrix #voxel_seed times #voxel_targets (matrice connect)
         for i in range(len(text)-1):
         #
             data = np.fromstring(text[i], dtype=int, sep=" ")
@@ -102,39 +120,25 @@ for subject in subjects_list:
     #
         print(' full matrix loaded!!')
 
-        # load target file
-
-        target_nii = nib.load(target_path)
-        target_data = target_nii.get_data()
-
-        # load seed, target coordinates
-        seed_coords_path = op.join(tracto_dir, 'coords_for_fdt_matrix2')
-        seed_coords = np.loadtxt(seed_coords_path).astype(np.int)
-        n_seed_voxels = seed_coords.shape[0]
-
-        target_coords_path = op.join(tracto_dir, 'tract_space_coords_for_fdt_matrix2')
-        target_coords = np.loadtxt(target_coords_path).astype(np.int)
-        n_target_voxels = target_coords.shape[0]
-        print n_target_voxels
-
-        target_labels = np.zeros(n_target_voxels, dtype=np.int)
-        for i in range(n_target_voxels):
-            target_labels[i] = target_data[target_coords[i, 0], target_coords[i, 1], target_coords[i, 2]]
 
         # convert to Compressed Sparse Column type, to perform fast artithmetics on columns
         c = conn_matrix.tocsc()
-        labels = np.unique(target_labels)
-        n_target_parcels = labels.size
-        print(n_target_parcels)
-        conn_matrix_parcelated = np.zeros([n_seed_voxels, n_target_parcels])
+        print "shape of sparse connectivity matrix", c.shape
+        if c.shape[1] != n_target_voxels:
+            print "numbre of target voxels not the same as the number od target voxels in target mask\n", n_target_voxels
+        else:
+            labels = np.unique(target_labels)
+            n_target_parcels = labels.size
+            print(n_target_parcels)
+            conn_matrix_parcelated = np.zeros([n_seed_voxels, n_target_parcels])
 
-        for label_ind, current_label in enumerate(labels):
-            target_inds = np.where(target_labels == current_label)[0]
-            conn_matrix_parcelated[:, label_ind] = c[:, target_inds].sum(1).squeeze()
+            for label_ind, current_label in enumerate(labels):
+                target_inds = np.where(target_labels == current_label)[0]
+                conn_matrix_parcelated[:, label_ind] = c[:, target_inds].sum(1).squeeze()
 
-        print "shape of connectivity matrix:", conn_matrix_parcelated.shape
+            print "shape of connectivity matrix:", conn_matrix_parcelated.shape
 
-        # save matrix in disk
-        joblib.dump(conn_matrix_parcelated, output_path, compress=3)
-        print('{}: saved reduced connectivity matrix!!'.format(subject))
-        print "time: %s" % str(time.time()-t2)
+            # save matrix in disk
+            joblib.dump(conn_matrix_parcelated, output_path, compress=3)
+            print('{}: saved reduced connectivity matrix!!'.format(subject))
+            print "time: %s" % str(time.time()-t2)

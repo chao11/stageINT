@@ -17,7 +17,7 @@ def original_matrix(subjects_list, hemisphere, altas, target_number):
         matrix = connect_jl[0]
         arr = np.append(arr, matrix, axis=0)
 
-    plt.imshow(arr,aspect='auto' ,interpolation='nearest')
+    plt.imshow(arr, aspect='auto',interpolation='nearest')
     plt.colorbar()
 
     plt.ylabel('voxels (all subjects)')

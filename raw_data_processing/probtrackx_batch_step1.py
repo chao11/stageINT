@@ -13,8 +13,7 @@ import sys
 space = str(sys.argv[1]) #volume or surface
 hemi = str(sys.argv[2])
 seed_name = str(sys.argv[3])    # big_STSTG
-altas = str(sys.argv[4])    # destrieux
-target2_name = '%s_%s'% (altas, seed_name)  # destrieux_big_STS+STG
+targets = str(sys.argv[4])    # destrieux
 n_samples = str(sys.argv[5])
 
 batchmode = 'off' # by default, just print the command but don't run it
@@ -34,7 +33,7 @@ root_dir = '/hpc/crise/hao.c/data'
 fs_SUBJECTS_DIR ="/hpc/banco/voiceloc_full_database/fs_5.3_sanlm_db"
 
 subjectList = os.listdir(root_dir)
-for subject in subjectList:
+for subject in subjectList[8:]:
 
 # ========================== define parameters and path =============================================
     subject_dir = op.join(root_dir,subject)
@@ -47,10 +46,10 @@ for subject in subjectList:
     sample_path = op.join(bedpostx_path, 'merged')
     brainmask_path = op.join(bedpostx_path,'nodif_brain_mask')
 
-    target2_path = op.join(mask_dir, '%s_target_mask_%s.nii.gz' %(hemi, target2_name))
+    target2_path = op.join(mask_dir, '%s_target_mask_%s.nii.gz' %(hemi, targets))
     white_surface = op.join(subject_dir, 'surface', '%s.white.gii'%hemi)
 
-    output_tracto_dir = op.join(subject_dir,'tracto_%s' %space, '%s_%s_%s_%s' %( hemi.upper(),  seed_name, altas, n_samples))
+    output_tracto_dir = op.join(subject_dir,'tracto_%s' %space, '%s_%s_%s_%s' %( hemi.upper(),  seed_name, targets, n_samples))
     mat_dot = op.join(output_tracto_dir,'fdt_matrix2.dot')
 
 
@@ -82,7 +81,7 @@ for subject in subjectList:
 
         #commands.getoutput('rm -rf %s' %output_tracto_dir)
 
-        cmd =   'fsl5.0-probtrackx2 -x %s --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P %s \
+        cmd = 'fsl5.0-probtrackx2 -x %s --onewaycondition -c 0.2 -S 2000 --steplength=0.5 -P %s \
         --fibthresh=0.01 --distthresh=0.0 --sampvox=0.0 --xfm=%s \
         --forcedir --opd -s %s -m %s --dir=%s --omatrix2 --target2=%s --fopd=%s  %s' \
                 %(seed_path, n_samples, xfm_path, sample_path, brainmask_path, output_tracto_dir, target2_path, white_surface, surf_option)
@@ -93,11 +92,12 @@ for subject in subjectList:
         --forcedir --opd -s %s -m %s --dir=%s --omatrix2 --target2=%s'%(seed_path,xfm_path, bedpostx_path, mask_path, output_tracto_dir, target_path)
         """
 
-        print cmd
-
-        if batchmode=='run':
+        if batchmode == 'run':
             batch_cmd = "frioul_batch '%s' " %cmd
+            print(batch_cmd)
             commands.getoutput(batch_cmd)
+        else:
+            print cmd
 
     else:
         print subject +' done!'
