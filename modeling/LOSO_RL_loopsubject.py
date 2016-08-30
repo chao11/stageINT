@@ -98,11 +98,9 @@ def check_coords(seed_coord, mask):
         return incorrect
 
 
-
-
 # get the connectivity matrix and the functional response ==============================================================
 def get_data( x_path, y_path, seed_coord):
-    # extract the functionnal response for each voxel correspondent ========================================================
+    # extract the functionnal response for each voxel correspondent ====================================================
     def extract_functional(coord, img_fmri):
         y = []
         for i in coord:
@@ -110,10 +108,10 @@ def get_data( x_path, y_path, seed_coord):
         return y
 
     connmat = joblib.load(x_path)
-    if 'distance' in x_path:
-        x = connmat
-    else:
+    if len(connmat) == 2:
         x = connmat[0]
+    else:
+        x = connmat
 
     y_nii = nib.load(y_path)
     y_img = y_nii.get_data()
@@ -243,7 +241,7 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
 #   leave 20 percente label(subjects) out , select subjects randomly
     import cross_validation_LabelShuffleSplite as cv
     lpss = cv.LabelShuffleSplit(list, n_iter=50, test_size=0.2)
-    for train_index, test_index in lpss:
+    for train_index, test_index in lpss:more
         print ("train:,", train_index, "test:", test_index)
         print [list[index] for index in test_index]
     """
@@ -343,7 +341,11 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
         print 'r2: ', r2[test_index]
 
         # save the predict values into the tractodir
-        predict_subject = op.join(root_dir, subject_test[0], tracto_dir, 'predict', lateral)
+        predict_subject_base = op.join(root_dir, subject_test[0], tracto_dir, 'predict')
+        if not op.isdir(predict_subject_base):
+            os.mkdir(predict_subject_base)
+
+        predict_subject = op.join(predict_subject_base, lateral)
         if not op.isdir(predict_subject):
             os.mkdir(predict_subject)
 
@@ -363,6 +365,7 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
         img.to_filename(predict_output_path)
 
 #       plot les valeurs et R2 score:
+        plt.figure()
         plt.plot(predi, Y_test, '.')
         plt.xlabel('predict')
         plt.ylabel('actual response')
@@ -381,13 +384,13 @@ def loso_model(list, hemisphere, parcel_altas, model, y_file, norma, lateral, we
 # ==================== main============================================================
 """
 hemisphere = 'lh'
-parcel_altas = 'destrieux'
+parcel_altas = 'wmparc'
 model = 'connmat'
 #y_file = ['rspmT_0001','rspmT_0002','rspmT_0003','rspmT_0004', 'rcon_0001', 'rcon_0002', 'rcon_0003', 'rcon_0004']
-y = 'rcon_0002'
+y = 'rspmT_0001'
 lateral='ipsi' # or bilateral
 weight = 'none'
-
+norma = 'none'
 """
 hemisphere = str(sys.argv[1])
 parcel_altas = str(sys.argv[2])
@@ -395,25 +398,31 @@ model = str(sys.argv[3])
 y= str(sys.argv[4])
 lateral = str(sys.argv[5])
 weight = str(sys.argv[6])
+#tracto_name = str(sys.argv[7])
+#target_name = str(sys.argv[8])
 
-# tracto_dir = str(sys.argv[6])
-#target_name = str(sys.argv[7])
 
-tracto_name = '{}_STS+STG_{}_2'.format(hemisphere.upper(), parcel_altas)
-target_name = '{}_target_mask_{}_165.nii.gz'.format(hemisphere, parcel_altas)
+options = ['none', 'zscore', 'norm', 'sum', 'partarget']
+# begin_index = options.index(norma)
 
-options = ['none', 'waytotal', 'norm', 'sum', 'partarget', 'zscore']
+tracto_name = '{}_small_STS+STG_{}_5000'.format(hemisphere.upper(), parcel_altas)
+target_name = '{}_target_mask_{}.nii.gz'.format(hemisphere, parcel_altas)
+
 
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
-
 root_dir = '/hpc/crise/hao.c/data'
 fMRI_dir = '/hpc/banco/voiceloc_full_database/func_voiceloc'
 
 # TODO: check: save as .xls file because the current version of xlrd can't read xlsx.
-output_predict_score_excel_file = '/hpc/crise/hao.c/model_result/tracto_volume/%s_LOSO_R2score_compare_normalization_%s_%s_weighted_%s.xls' %(tracto_name, lateral, model, weight)
+output_modeling_result_dir = '/hpc/crise/hao.c/model_result/tracto_volume_%s/'%parcel_altas
 
-tracto_dir = 'tracto_volume/%s' % tracto_name
+if not op.isdir(output_modeling_result_dir):
+    os.mkdir(output_modeling_result_dir)
 
+output_predict_score_joblib_file = '{}/r2score_{}_{}_{}_{}_{}_weighted{}.jl'\
+    .format(output_modeling_result_dir,hemisphere, parcel_altas, lateral, model, y, weight)
+
+tracto_dir = 'tracto_volume/%s' % (tracto_name)
 
 subjects_list = os.listdir(root_dir)
 
@@ -437,12 +446,16 @@ y_basedir = 'nomask_singletrialbetas_spm12_stats/resampled_fs5.3_space/{}.nii'.f
 for i in subjects_list[:]:
 #
     y_test_path = op.join(fMRI_dir, i, y_basedir)
+    conn_mat = op.join(root_dir, i, tracto_dir, 'conn_matrix_seed2parcels.jl')
+    if not op.isfile(y_test_path) or not op.isfile(conn_mat):
 #
-    if not op.isfile(y_test_path):
-#
-        print( y_test_path + "  not exist")
+        print( y_test_path+ " or " + conn_mat + " not exist")
 #
         subjects_list.remove(i)
+
+if 'AHS22' in subjects_list:
+    print 'remove AHS22'
+    subjects_list.remove('AHS22')
 print("length of the list: " + str(len(subjects_list)))
 
 # ============================= compare result of each normalization methode ===========================================
@@ -457,11 +470,10 @@ for norma in options:
 #   mean score of this set of LOSO
     d = {'norma': norma,  'y_file': y, 'mean_MAE': np.mean(mae), 'R2': np.mean(R2)}
     dlist.append(d)
-
-    result_dataframe = pd.DataFrame({norma:R2})
+    result_dataframe = pd.DataFrame({norma: R2})
     subID = pd.DataFrame({'subject':sub_list})
-
-    # ================================================ save score =========================================================
+    """
+    # ================================================ save score in excel  =========================================================
     if op.isfile(output_predict_score_excel_file):
         book = load_workbook(output_predict_score_excel_file)
         writer = pd.ExcelWriter(output_predict_score_excel_file, engine='openpyxl')
@@ -476,11 +488,14 @@ for norma in options:
     print "save the r2 score in :", output_predict_score_excel_file
 
     n += 1
+    """
+# save the score of all normalization
+    ALL_result_dataframe = pd.DataFrame(dict_R2)
+    joblib.dump(ALL_result_dataframe, output_predict_score_joblib_file, compress=3)
+
+    print 'save to :', output_predict_score_joblib_file, ALL_result_dataframe.shape
+
 
 print dlist
-
-# save the score of all normalization
-ALL_result_dataframe = pd.DataFrame(dict_R2)
-joblib.dump(ALL_result_dataframe, '/hpc/crise/hao.c/model_result/tracto_volume/r2score_{}_{}_{}_{}_{}_weighted{}.jl'.format(hemisphere, parcel_altas, lateral, model, y, weight))
 
 

@@ -1,3 +1,6 @@
+"""
+create functional response map(nifti file) of ROI region and project onto a sutface
+"""
 
 import numpy as np
 import nibabel
@@ -27,21 +30,24 @@ def read_coord(file_path):
 
 fs_exec_dir = '/hpc/soft/freesurfer/freesurfer/bin'
 
-subject = 'AHS22'
-contrast = 'rcon_0004'
-hemisphere = 'rh'
-altas = 'destrieux'
+subject = 'AMA02'
+contrast = 'rcon_0003'
+hemisphere = 'lh'
+atlas = 'destrieux_GM'
 tracto_name = 'tracto_volume/'
 
-coord_path = '/hpc/crise/hao.c/data/{}/tracto_volume/{}_STS+STG_{}_2/coords_for_fdt_matrix2'.format(subject, hemisphere.upper(),altas)
-y_path = '/hpc/banco/voiceloc_full_database/func_voiceloc/{}/nomask_singletrialbetas_spm12_stats/resampled_fs5.3_space/{}.nii'.format(subject, contrast)
+coord_path = '/hpc/crise/hao.c/data/{}/tracto_volume/{}_small_STS+STG_{}_5000/coords_for_fdt_matrix2'.\
+    format(subject, hemisphere.upper(),atlas)
+
+y_path = '/hpc/banco/voiceloc_full_database/func_voiceloc/{}/nomask_singletrialbetas_spm12_stats/' \
+         'resampled_fs5.3_space/{}.nii'.format(subject, contrast)
 y_mask_nii_path = '/hpc/crise/hao.c/data/{}/{}_{}_mask.nii.gz'.format(subject, hemisphere, contrast)
 y_mask_gii_path = '/hpc/crise/hao.c/data/{}/{}_{}_mask.gii'.format(subject, hemisphere, contrast)
 
 
 coord = read_coord(coord_path)
 y_data = nibabel.load(y_path).get_data()
-img = np.zeros((256,256,256))
+img = np.zeros((256, 256, 256))
 for i in coord:
     img[i[0], i[1], i[2]] = y_data[i[0], i[1], i[2]]
 
@@ -49,6 +55,7 @@ y_img = nibabel.Nifti1Image(img, nibabel.load(y_path).get_affine())
 y_img.to_filename(y_mask_nii_path)
 print 'save' + y_mask_nii_path
 
-cmd ='{}/mri_vol2surf --src {} --regheader {} --hemi {} --o {}  --out_type gii --projfrac 0.5 --surf white'.format(fs_exec_dir, y_mask_nii_path, subject, hemisphere, y_mask_gii_path)
+cmd ='{}/mri_vol2surf --src {} --regheader {} --hemi {} --o {}  --out_type gii --projfrac 0.5 --surf white'.\
+    format(fs_exec_dir, y_mask_nii_path, subject, hemisphere, y_mask_gii_path)
 print cmd
 commands.getoutput(cmd)

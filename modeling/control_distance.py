@@ -67,14 +67,14 @@ def get_info_from_log(tracto_dir, flag):
 
 
 # =================================== main =============================================================================
-tracto_name = str(sys.argv[1])  # tracto/.... or tracto_surface_
+tracto_name = 'tracto_volume/LH_small_STS+STG_destrieux_WM_5000'
 
 root_dir = '/hpc/crise/hao.c/data'
 subjects_list = os.listdir(root_dir)
 
 for subject in subjects_list:
 
-    tracto_dir = op.join(root_dir, subject,tracto_name)
+    tracto_dir = op.join(root_dir, subject, tracto_name)
     coord_file_path = op.join(tracto_dir,  'coords_for_fdt_matrix2')
     target_path = get_info_from_log(tracto_dir=tracto_dir, flag='--target2=')
     target_file = op.basename(target_path)

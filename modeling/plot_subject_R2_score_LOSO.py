@@ -28,18 +28,18 @@ def getFileName(path):
     return jl_list
 
 
-model_score_path = '/hpc/crise/hao.c/model_result/tracto_volume_wmparc_desikan'
-
+model_score_path = '/hpc/crise/hao.c/model_result/tracto_volume_aparcaseg'
 jl_score_list = getFileName(model_score_path)
 
 for jl in jl_score_list:
+    print jl
     score = joblib.load(op.join(model_score_path, jl))
     print score.shape
     if 'AHS22' in score.index:
         score = score.drop('AHS22')
 
     mean_score = score.mean(axis=0)
-
+    print mean_score
     score.plot(figsize=(20, 10))
     plt.xlabel('subject')
     plt.ylabel('R2 score')
@@ -48,4 +48,10 @@ for jl in jl_score_list:
     plt.text(50, round(np.amin(score.min(axis=0))), 'mean of R2 score: \n {}'.format(mean_score))
 
     plt.show()
-    plt.savefig(op.join(model_score_path, '%s.png'%jl))
+    plt.savefig(op.join(model_score_path, '%s.png' %jl))
+
+
+
+
+
+
